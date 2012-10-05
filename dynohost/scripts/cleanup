@@ -1,0 +1,9 @@
+#!/bin/bash
+
+dyno_id=$1
+lxc-stop -n "$dyno_id"  
+sleep 1
+rm run_${dyno_id}.txt
+rm -fr /var/lib/lxc/$dyno_id
+
+

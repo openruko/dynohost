@@ -1,0 +1,51 @@
+#!/usr/bin/env node
+
+var version = require('../../package.json').version;
+var hostServer = require('../hostserver');
+var RezServer = require('../rezendpoint');
+var fs = require('fs');
+
+
+var envKeys= ['API_BASE_URL', 'LOGPLEX_SERVER', 'LOGPLEX_ID',
+  'PROCLITE_PORT', 'PROCLITE_SECRET', 'PRIVATE_KEY', 'PUBLIC_KEY'];
+
+envKeys.forEach(function(envKey) {
+  if(process.env[envKey] === undefined) {
+    console.error('Environment variables ' + envKey + ' must be defined.');
+    process.exit(1);
+  }
+});
+
+var settings = {};
+settings.privateKey = process.env['PRIVATE_KEY'];
+settings.publicKey = process.env['PUBLIC_KEY'];
+
+console.log('Booting dyno server v' + version);
+
+var rezPort = process.env.PORT || 4000;
+
+var server = hostServer.createServer();
+
+server.on('ready', function() {
+
+  var rezOpts = {
+    key: fs.readFileSync(settings.privateKey),
+    cert: fs.readFileSync(settings.publicKey),
+    port: rezPort,
+    secret: process.env.REZ_API_SECRET
+  };
+
+  var rezServer = new RezServer(server, rezOpts);
+  rezServer.start(server.getDyno);
+  console.log('Note: rez server on port '  + rezPort);
+
+  process.on('SIGTERM', function() {
+    console.log('SIGTERM received');
+    rezServer.stop();
+    server.shutdown();
+    console.log('Server shutdown');
+  });
+
+});
+
+server.start();

@@ -1,0 +1,6 @@
+local.env
+certs/
+assets/
+node_modules/
+*.log
+run_*.txt
