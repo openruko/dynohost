@@ -22,19 +22,35 @@ mkdir -p $dyno_dir/rootfs
 
 (
 cd $dyno_dir/rootfs
-mkdir -p root/ps-run root/sockets proc sys usr etc/ssl sbin bin lib lib64 
-)
+mkdir -p root/ps-run root/sockets proc sys usr etc/ssl etc/alternatives sbin bin lib lib64 
 
+cat <<EOF > etc/resolv.conf
+nameserver 8.8.8.8
+nameserver 8.8.4.4
+EOF
+
+cat <<EOF > etc/nsswitch.conf
+hosts: files dns
+EOF
+
+cat <<EOF > etc/hostname
+$dyno_id
+EOF
+
+cat <<EOF > etc/hosts
+127.0.0.1       localhost
+127.0.0.1       $dyno_id
+EOF
+)
 
 mounts=(${@:4})
 
 s3_repo_url=$4
 s3_repo_code=$(curl -s -o /dev/null -w "%{http_code}" "${s3_repo_url#*:}")
 
-if [ "$(basename $0)" == 'buildprovision' ];  then
+if [ "$(basename $0)" = 'build-provision' ];  then
   if [ "$s3_repo_code" = "404" ]; then
-    echo "Build script"
-    mounts=("/app:file://emptyrepo.tgz" ${@:5})
+    mounts=("/app:file://assets/emptyrepo.tgz" ${@:5})
   fi
 fi
 
@@ -125,10 +141,14 @@ none $dyno_dir/rootfs/dev/shm tmpfs defaults 0 0
 /lib $dyno_dir/rootfs/lib none bind 0 0
 /lib64 $dyno_dir/rootfs/lib64 none bind 0 0
 /etc/ssl $dyno_dir/rootfs/etc/ssl none bind 0 0
+/etc/alternatives $dyno_dir/rootfs/etc/alternatives none bind 0 0
 $RUKORUN_PATH $dyno_dir/rootfs/root/ps-run none bind 0 0
-$CODONHOOKS_PATH $dyno_dir/rootfs/app/hooks none bind 0 0
 $socket_dir $dyno_dir/rootfs/root/sockets none bind 0 0
 FSCONFIG
+
+if [ "$(basename $0)" = 'build-provision' ];  then
+  echo "$CODONHOOKS_PATH $dyno_dir/rootfs/app/hooks none bind 0 0" >> $dyno_dir/fstab
+fi
 
 
 echo "Starting dyno"
