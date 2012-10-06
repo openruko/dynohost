@@ -17,6 +17,7 @@ function RezServer(dynoFetcher, options) {
         var dataParts = strData.toString().split('\n');
         var secret = dataParts[0];
         var dynoId = dataParts[1];
+        var disconnected = false;
 
          // if(secret !== 'xyz') {
          //    s.write('Not authorized.');
@@ -35,7 +36,7 @@ function RezServer(dynoFetcher, options) {
         if(dyno.currentState == 'listening') { dyno.run(); }
 
         dyno.on('data', function(data) {
-          if(disconnected) return;
+          if(disconnected || !s.writable) return;
           s.write(data);
         });
 
@@ -44,7 +45,6 @@ function RezServer(dynoFetcher, options) {
           dyno.ioSocket.write(data);
         });
 
-        var disconnected = false;
         s.on('end', function() {
           console.log(dynoId + ' - Rez Socket disconnected');
           disconnected = true;
