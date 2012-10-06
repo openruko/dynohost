@@ -14,6 +14,7 @@ export PRIVATE_KEY=${PRIVATE_KEY:-"certs/server.pem"}
 export PUBLIC_KEY=${PUBLIC_KEY:-"certs/server.pem"}
 export RUKORUN_PATH=${RUKORUN_PATH:-/root/rk/rukorun}
 export CODONHOOKS_PATH=${CODONHOOKS_PATH:-/root/rk/codonhooks}
+export SOCKET_PATH=${SOCKET_PATH:-/root/rk/dynohost/sockets}
 
 mkdir -p logs
 export LOG_DIR=logs/

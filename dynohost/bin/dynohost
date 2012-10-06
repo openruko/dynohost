@@ -6,7 +6,7 @@ var RezServer = require('../rezendpoint');
 var fs = require('fs');
 
 
-var envKeys= ['API_BASE_URL', 'LOGPLEX_SERVER', 'LOGPLEX_ID',
+var envKeys= ['API_BASE_URL', 'LOGPLEX_SERVER', 'LOGPLEX_ID', 'SOCKET_PATH',
   'PROCLITE_PORT', 'PROCLITE_SECRET', 'PRIVATE_KEY', 'PUBLIC_KEY'];
 
 envKeys.forEach(function(envKey) {
@@ -19,6 +19,7 @@ envKeys.forEach(function(envKey) {
 var settings = {};
 settings.privateKey = process.env['PRIVATE_KEY'];
 settings.publicKey = process.env['PUBLIC_KEY'];
+settings.socketPath = process.env['SOCKET_PATH'];
 
 console.log('Booting dyno server v' + version);
 

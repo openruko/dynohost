@@ -6,6 +6,7 @@ var EventEmitter = require('events').EventEmitter;
 var fs = require('fs');
 var LogPlexClient = require('./logplex');
 var request = require('request');
+var path = require('path');
 
 module.exports = DynoStateMachine;
 DynoStateMachine.prototype = new EventEmitter();
@@ -153,8 +154,8 @@ function DynoStateMachine(options) {
         command: '/bin/bash', 
         args: [provisionScript,
           options.dyno_id, 
-          '/root/rk/dynohost/sockets/' + self.id,
-          '/root/rk/dynohost/sockets/' + self.id].concat(Object.keys(self.options.mounts).map(function(mKey) {
+          path.join(process.env.SOCKET_PATH, self.id),
+          path.join(process.env.SOCKET_PATH, self.id)].concat(Object.keys(self.options.mounts).map(function(mKey) {
             return mKey + ':' + self.options.mounts[mKey];
           }))
       };
@@ -254,8 +255,8 @@ function DynoStateMachine(options) {
 
 
 function buildSocketServer(dyno_id, prefix) {
-  var socketDir='/root/rk/dynohost/sockets/' + dyno_id;
-  var socketPath=socketDir + '/' + prefix + '.sock';
+  var socketDir=path.join(process.env.SOCKET_PATH,dyno_id);
+  var socketPath=path.join(socketDir,prefix + '.sock');
   if(!fs.existsSync(socketDir)) {
     fs.mkdirSync(socketDir);
   }
