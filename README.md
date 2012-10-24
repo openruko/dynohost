@@ -15,7 +15,7 @@ On a fresh Ubuntu 12.04 LTS instance:
 ```
 apt-get install lxc
 apt-get install curl
-apt-get install nodejs
+apt-get install nodejs g++
 ```
 
 Please share experiences with CentOS, Fedora etc.. as dynohost has a direct dependency
