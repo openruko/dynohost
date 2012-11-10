@@ -38,7 +38,6 @@ function DynoHostServer() {
         console.error('Unable to fetch jobs from ' + url);
         return setTimeout(cb, 1000);
       }
-
       var payload = JSON.parse(body);
       payload.forEach(function(job) {
         console.log(job.dyno_id + ' - Incoming new job: ' + job.next_action);
@@ -62,7 +61,7 @@ function DynoHostServer() {
       url: process.env.API_BASE_URL + 'internal/updatestate',
       headers: {
         'Authorization': ' Basic ' + 
-          new Buffer(':' + process.env.API_SECRET).toString('base64')
+          new Buffer(':' + process.env.API_SERVER_KEY).toString('base64')
       },
       json: true,
       body: payload
