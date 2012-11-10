@@ -271,7 +271,10 @@ function syncExecute(instructions, cb, timeout) {
   var stderr = '';
   var combined = '';
 
-  var inst = spawn(instructions.command, instructions.args);
+  var inst = spawn(instructions.command, instructions.args, {
+    cwd: path.join(__dirname, '..'),
+    env: process.env
+  });
 
 
   inst.stdout.setEncoding('utf8');
