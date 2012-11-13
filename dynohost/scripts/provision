@@ -5,7 +5,7 @@ set -o pipefail
 
 dyno_id=$1
 socket_dir=$2
-old_socket_dir=$3 #legacy - ignoer
+old_socket_dir=$3 #legacy - ignore
 run_command="/root/ps-run/nodeboot"
 
 touch "run_${dyno_id}.txt"
@@ -49,8 +49,9 @@ s3_repo_url=$4
 s3_repo_code=$(curl -s -o /dev/null -w "%{http_code}" "${s3_repo_url#*:}")
 
 if [ "$(basename $0)" = 'build-provision' ];  then
+  # TODO if 403 Not Authorized print a warning
   if [ "$s3_repo_code" = "404" ]; then
-    mounts=("/app:file://assets/emptyrepo.tgz" ${@:5})
+    mounts=("/app:file://emptyrepo.tgz" ${@:5})
   fi
 fi
 
