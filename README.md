@@ -44,7 +44,9 @@ make certs
 
 dynhost/bin/dynohost will check for the presence of several environment variables,
 these must be configured as part of the process start - e.g. configured in 
-supervisord or as part of boot script see ./debug.launch for example
+supervisord or as part of boot script see ./debug.launch for example.
+
+Dynhost need to be started as root. If you use sudo, do not forget to pass the environment variables with `sudo -E`
 
 * KEY_AUTH_BASE_URL - base url of the API server (example: http://localhost:5000/)  
 * API_SERVER_SUPERUSER_- special key to authenticate with API server (example: KEY=abcdef-342131-123123123-asdasd)
