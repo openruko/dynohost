@@ -17,6 +17,10 @@ export CODONHOOKS_PATH=${CODONHOOKS_PATH:-/root/rk/codonhooks}
 export SOCKET_PATH=${SOCKET_PATH:-/root/rk/dynohost/sockets}
 export API_SERVER_KEY=${API_SERVER_KEY:-"aaa-bbb-ccc-ddd-eee"}
 
+if [ ! -d "$SOCKET_PATH" ]; then
+  mkdir -p $SOCKET_PATH
+fi
+
 mkdir -p logs
 export LOG_DIR=logs/
 
