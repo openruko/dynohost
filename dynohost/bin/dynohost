@@ -6,10 +6,13 @@ var RezServer = require('../rezendpoint');
 var fs = require('fs');
 var conf = require('../conf');
 var exec = require('child_process').exec;
+var mkdirp = require('mkdirp');
 
 if(process.getuid() !== 0){
   throw new Error("Dyno controller must run as root.");
 }
+
+mkdirp.sync(conf.dynohost.socketPath);
 
 function handleExec(err, stdout, stderr){
   if(err) {

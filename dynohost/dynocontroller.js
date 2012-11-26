@@ -187,7 +187,7 @@ function DynoStateMachine(options) {
         if(effectiveResult.output.indexOf('No cgroup mounted') !== -1) {
           console.error(self.id + ' - No cgroup mounted on host system.');
         } else {
-          console.error(self.id + ' - ' + effectiveResult.output);
+          console.error(self.id + ' - timeout sockets not connected - ' + effectiveResult.output);
         }
         self.fire('error', {});
       });
