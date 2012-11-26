@@ -1,0 +1,1 @@
+dynohost: dynohost/bin/dynohost

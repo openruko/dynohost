@@ -1,9 +1,9 @@
 var dgram = require('dgram');
 var client = dgram.createSocket('udp4');
+var conf = require('./conf');
 
-var serverParts = process.env.LOGPLEX_SERVER.split(':');
-var LOGPLEX_HOSTNAME = serverParts[0];
-var LOGPLEX_HOSTPORT = +(serverParts[1]);
+var LOGPLEX_HOSTNAME = conf.logplex.hostname;
+var LOGPLEX_HOSTPORT = conf.logplex.port;
 
 function LogPlexClient(token) {
 

@@ -3,7 +3,8 @@ var DynoStateMachine = require('./dynocontroller');
 var EventEmitter = require('events').EventEmitter;
 var request = require('request');
 var async = require('async');
-var apiBaseUrl = process.env.API_BASE_URL;
+var conf = require('./conf');
+var apiBaseUrl = require('url').format(conf.apiserver) + '/';
 
 var dynos = {};
 
@@ -58,10 +59,10 @@ function DynoHostServer() {
                 ' - Update api server with state: ' + payload.state);
     var requestInfo = {
       method: 'POST',
-      url: process.env.API_BASE_URL + 'internal/updatestate',
+      url: apiBaseUrl + 'internal/updatestate',
       headers: {
         'Authorization': ' Basic ' + 
-          new Buffer(':' + process.env.API_SERVER_KEY).toString('base64')
+          new Buffer(':' + conf.apiserver.key).toString('base64')
       },
       json: true,
       body: payload

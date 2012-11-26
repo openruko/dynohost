@@ -44,16 +44,23 @@ make certs
 
 dynhost/bin/dynohost will check for the presence of several environment variables,
 these must be configured as part of the process start - e.g. configured in 
-supervisord or as part of boot script see ./debug.launch for example
+supervisord or as part of boot script see ./dynoshot/conf.js for example
 
-* KEY_AUTH_BASE_URL - base url of the API server (example: http://localhost:5000/)  
-* API_SERVER_SUPERUSER_- special key to authenticate with API server (example: KEY=abcdef-342131-123123123-asdasd)
-* PORT - TCP port to bind server to (<1024 require superuser privileges)
-* PRIVATE_KEY - Path to private key (can be relative to project root)
-* PUBLIC_KEY - Path to public key (can be relative to project root)
+* APISERVER_KEY - special key to authenticate with API server (example: KEY=abcdef-342131-123123123-asdasd)
 * RUKORUN_PATH - Path to rukorun directory
 * CODONHOOKS_PATH - Path to codon hooks directory
 
+## Launch
+
+```
+$ cat > .env << EOF
+APISERVER_KEY=$WHAT_WAS_WRITTEN_AT_THE_END_OF_APISERVER_SETUP
+RUKORUN_PATH=$PATH_TO_RUKORUN
+CODONHOOKS_PATH=$PATH_TO_CODONHOOKS
+EOF
+
+sudo foreman start
+```
 
 ## Help and Todo 
 

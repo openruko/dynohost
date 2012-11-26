@@ -1,4 +1,5 @@
 local.env
+.env
 certs/
 assets/
 node_modules/
