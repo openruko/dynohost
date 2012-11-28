@@ -15,7 +15,7 @@ On a fresh Ubuntu 12.04 LTS instance:
 ```
 apt-get install lxc
 apt-get install curl
-apt-get install nodejs g++
+apt-get install nodejs g++ libssl0.9.8
 ```
 
 Please share experiences with CentOS, Fedora etc.. as dynohost has a direct dependency
