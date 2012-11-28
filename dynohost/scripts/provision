@@ -24,12 +24,6 @@ mkdir -p $dyno_dir/rootfs
 cd $dyno_dir/rootfs
 mkdir -p root/ps-run root/sockets proc sys usr etc/ssl etc/alternatives sbin bin lib lib64 
 
-cat <<EOF > etc/resolv.conf
-#nameserver 8.8.8.8
-#nameserver 8.8.4.4
-nameserver 10.40.253.1
-EOF
-
 cat <<EOF > etc/nsswitch.conf
 hosts: files dns
 EOF
@@ -68,11 +62,12 @@ for mount in "${mounts[@]}"; do
   # create the mount point within the container
   mkdir -p $dyno_dir/rootfs/$mount_point
 
-  echo "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@Fetching $mount_url"
   # support protocols file/// and http://
   # extract the gzipped tar, dont bother with squashfs
   #if s3url starts with http
   if [[ "$mount_url" == http* ]]; then
+    echo "mount URL adn proxy $http_proxy"
+    echo "$(whoami)"
     curl -L $mount_url | tar -z -x -C "$dyno_dir/rootfs/$mount_point"
   fi
 
@@ -83,9 +78,7 @@ for mount in "${mounts[@]}"; do
     echo "mtmpmount $mtmpmount"
     finalmount=${mtmpmount%%.tgz};
     echo "finalmount $finalmount"
-    echo ">>> cat assets/${mount_url#*//} | tar -z -x -C \"$dyno_dir/rootfs/$mount_point\" <<<"
-    #cat assets/${mount_url#*//} | tar -z -x -C "$dyno_dir/rootfs/$mount_point"
-   # echo " cp -r  assets/$finalmount $dyno_dir/rootfs/$mount_point"
+    echo " cp -r  assets/$finalmount $dyno_dir/rootfs/$mount_point"
     cp -r  assets/$finalmount/* $dyno_dir/rootfs/$mount_point/
   fi
   #else
@@ -105,29 +98,17 @@ dyno_temp_dir="$dyno_dir/rootfs/tmp"
 mkdir -p "$dyno_temp_dir"
 chmod 1777 "$dyno_temp_dir"
 
-DEV="$dyno_dir/rootfs/dev"
-mkdir -p ${DEV}
-mknod -m 666 ${DEV}/null c 1 3
-mknod -m 666 ${DEV}/zero c 1 5
-mknod -m 666 ${DEV}/random c 1 8
-mknod -m 666 ${DEV}/urandom c 1 9
-mkdir -m 755 ${DEV}/pts
-mkdir -m 1777 ${DEV}/shm
-mkdir -m 1777 ${DEV}/fd
-mknod -m 666 ${DEV}/tty c 5 0
-mknod -m 600 ${DEV}/console c 5 1
-mknod -m 666 ${DEV}/tty0 c 4 0
-mknod -m 666 ${DEV}/full c 1 7
-# mknod -m 600 ${DEV}/initctl p 
-mknod -m 666 ${DEV}/ptmx c 5 2
-
 # TODO Add memory and CPU limits
 cat <<CONFIG >$lxc_dir/$dyno_id/config
 lxc.utsname = $dyno_id
 lxc.pts = 1024
 lxc.tty = 4
-lxc.rootfs = $dyno_dir/rootfs
+lxc.rootfs = /var/lib/lxc/model2/rootfs
 lxc.mount = $dyno_dir/fstab
+lxc.network.type=veth
+lxc.network.link=lxcbr0
+lxc.network.flags=up
+lxc.utsname = $dyno_id
 CONFIG
 
 cat <<PASSWD >$lxc_dir/$dyno_id/rootfs/etc/passwd
@@ -143,26 +124,20 @@ fstemplate=default
 
 
 cat <<FSCONFIG >$dyno_dir/fstab
-none $dyno_dir/rootfs/dev/pts devpts defaults 0 0
-none $dyno_dir/rootfs/proc proc nodev,noexec,nosuid 0 0
-none $dyno_dir/rootfs/sys sysfs defaults 0 0
-none $dyno_dir/rootfs/dev/shm tmpfs defaults 0 0
-/usr $dyno_dir/rootfs/usr none bind 0 0
-/sbin $dyno_dir/rootfs/sbin none bind 0 0
-/bin $dyno_dir/rootfs/bin none bind 0 0
-/lib $dyno_dir/rootfs/lib none bind 0 0
-/lib64 $dyno_dir/rootfs/lib64 none bind 0 0
-/etc/ssl $dyno_dir/rootfs/etc/ssl none bind 0 0
-/etc/alternatives $dyno_dir/rootfs/etc/alternatives none bind 0 0
+proc            proc         proc    nodev,noexec,nosuid 0 0
+sysfs           sys          sysfs defaults  0 0
+$dyno_dir/rootfs/app $dyno_dir/rootfs/app none bind 0 0
 $RUKORUN_PATH $dyno_dir/rootfs/root/ps-run none bind 0 0
 $socket_dir $dyno_dir/rootfs/root/sockets none bind 0 0
+$dyno_dir/rootfs/tmp $dyno_dir/rootfs/tmp none bind 0 0
 FSCONFIG
 
+echo "condon path : $CODONHOOKS_PATH"
+
 if [ "$(basename $0)" = 'build-provision' ];  then
+  echo "$CODONHOOKS_PATH $dyno_dir/rootfs/root/app/hooks none bind 0 0" >> $dyno_dir/fstab
   echo "$CODONHOOKS_PATH $dyno_dir/rootfs/app/hooks none bind 0 0" >> $dyno_dir/fstab
 fi
 
-
 echo "Starting dyno"
-
-lxc-start -l DEBUG -o run_$dyno_id.txt -d -n $dyno_id $run_command
+lxc-start -l DEBUG -o run_$dyno_id.txt -d -n $dyno_id 

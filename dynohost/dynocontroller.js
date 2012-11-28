@@ -11,7 +11,7 @@ var path = require('path');
 module.exports = DynoStateMachine;
 DynoStateMachine.prototype = new EventEmitter();
 
-function DynoStateMachine(options) { 
+function DynoStateMachine(options) {
 
   var self = this;
   self.id = options.dyno_id;
@@ -19,32 +19,46 @@ function DynoStateMachine(options) {
   self.currentState = 'idle';
 
   // stuff we can do to the dyno
-  var actions = [
-    { name: 'start', from: 'idle', to: 'starting' },
-    { name: 'run', from: 'listening', to: 'running' },
-    { name: 'stop',  to: 'completed' }
-  ];
+  var actions = [{
+    name: 'start',
+    from: 'idle',
+    to: 'starting'
+  }, {
+    name: 'run',
+    from: 'listening',
+    to: 'running'
+  }, {
+    name: 'stop',
+    to: 'completed'
+  }];
 
   // events caused by the dyno on the dark side
-  var events = [
-    { event: 'connected', from: 'starting', to: 'listening' },
-    { event: 'exit', from: 'running', to: 'completed' },
-    { event: 'error', to: 'errored' }
-  ];
+  var events = [{
+    event: 'connected',
+    from: 'starting',
+    to: 'listening'
+  }, {
+    event: 'exit',
+    from: 'running',
+    to: 'completed'
+  }, {
+    event: 'error',
+    to: 'errored'
+  }];
 
   var setState = function(state) {
-    self.currentState = state;
-    self.emit('stateChanging', state);
-    console.log(self.id + ' - State changed to ' + state);
-    self.emit('stateChanged', state);
-  };
+      self.currentState = state;
+      self.emit('stateChanging', state);
+      console.log(self.id + ' - State changed to ' + state);
+      self.emit('stateChanged', state);
+    };
 
 
-  if(!options.attached) {
-    self.logplexClient=new LogPlexClient(self.options.logplex_id);
+  if (!options.attached) {
+    self.logplexClient = new LogPlexClient(self.options.logplex_id);
 
     self.on('stateChanged', function(state) {
-      if(state === 'listening') {
+      if (state === 'listening') {
         self.run();
       }
     });
@@ -55,7 +69,7 @@ function DynoStateMachine(options) {
   }
 
   self.on('stateChanged', function(state) {
-    if(state === 'completed') {
+    if (state === 'completed') {
       console.log(self.id + ' - Cleanup due to process exit');
       self.stop();
     }
@@ -64,25 +78,26 @@ function DynoStateMachine(options) {
   actions.forEach(function(action) {
     self[action.name] = function(cb) {
 
-      console.log(self.id + ' - Executing ' + action.name + ' (current state: ' + 
-               self.currentState + ')');
+      console.log(self.id + ' - Executing ' + action.name + ' (current state: ' + self.currentState + ')');
 
-      if(action.from && self.currentState !== action.from) {
-        return cb && cb({ error: 'must be in state ' + action.from + 
-                  ' when call ' + action.name});
+      if (action.from && self.currentState !== action.from) {
+        return cb && cb({
+          error: 'must be in state ' + action.from + ' when call ' + action.name
+        });
       }
 
       self.fn[action.name](function(actionError) {
-        if(actionError) {
+        if (actionError) {
           setState('errored');
-          return cb && cb({ error: 'unable to transition', 
-                    internalError: actionError });
+          return cb && cb({
+            error: 'unable to transition',
+            internalError: actionError
+          });
         }
-        var afterName = 'after' + action.name.substr(0,1).toUpperCase() + 
-          action.name.substr(1);
-        if(self[afterName]) {
-          self[afterName]();  
-        } 
+        var afterName = 'after' + action.name.substr(0, 1).toUpperCase() + action.name.substr(1);
+        if (self[afterName]) {
+          self[afterName]();
+        }
         setState(action.to);
         return cb && cb();
       });
@@ -91,27 +106,28 @@ function DynoStateMachine(options) {
 
   self.fire = function(eventName) {
     console.log(self.id + ' - Event ' + eventName + ' fired');
-    var relatedEvent =  events.filter(function(ev) {
+    var relatedEvent = events.filter(function(ev) {
       return ev.event === eventName;
     })[0];
-    if(relatedEvent && relatedEvent.to) {
+    if (relatedEvent && relatedEvent.to) {
       setState(relatedEvent.to);
     }
   };
 
-  self.commandServer = buildSocketServer(self.id,'command');
-  self.ioServer = buildSocketServer(self.id,'io');
+  self.commandServer = buildSocketServer(self.id, 'command');
+  self.ioServer = buildSocketServer(self.id, 'io');
 
   self.commandServer.on('connection', handleConnection('commandSocket'));
   self.ioServer.on('connection', handleConnection('ioSocket'));
 
   var connCount = 0;
+
   function handleConnection(socketName) {
     return function(socket) {
       console.log(self.id + ' - Socket ' + socketName + ' connected');
       self[socketName] = socket;
       connCount++;
-      if(connCount === 2) {
+      if (connCount === 2) {
         self.fire('connected');
 
         self.ioSocket.on('data', function(data) {
@@ -121,13 +137,13 @@ function DynoStateMachine(options) {
         self.commandSocket.on('data', function(status) {
           status = status.toString().split('\n')[0]; // remove trailing line
           console.log(self.id + ' - Status from dyno: ' + status);
-          if(self.logplexClient) {
+          if (self.logplexClient) {
             // TODO: diff logplex for state changes
             // record previous state - from x to y
             self.logplexClient.write('State changed to ' + status);
           }
 
-          if(status.toString().indexOf('exit') !== -1) {
+          if (status.toString().indexOf('exit') !== -1) {
             var statStr = status.toString();
             self.exitCode = +(statStr.substr(7));
             self.fire('exit');
@@ -137,32 +153,29 @@ function DynoStateMachine(options) {
     };
   }
 
-  self.fn = {}; 
-  self.fn.start = function(cb) { 
+  self.fn = {};
+  self.fn.start = function(cb) {
 
     var provisionScript = 'dynohost/scripts/' + self.options.template + '-provision';
 
     fs.exists(provisionScript, function(exists) {
 
-      if(!exists) {
+      if (!exists) {
         provisionScript = 'dynohost/scripts/provision';
       }
 
       console.log(self.id + ' - provisioning with ' + provisionScript);
 
-      var buildArgs = { 
-        command: '/bin/bash', 
-        args: [provisionScript,
-          options.dyno_id, 
-          path.join(process.env.SOCKET_PATH, self.id),
-          path.join(process.env.SOCKET_PATH, self.id)].concat(Object.keys(self.options.mounts).map(function(mKey) {
-            return mKey + ':' + self.options.mounts[mKey];
-          }))
+      var buildArgs = {
+        command: '/bin/bash',
+        args: [provisionScript, options.dyno_id, path.join(process.env.SOCKET_PATH, self.id), path.join(process.env.SOCKET_PATH, self.id)].concat(Object.keys(self.options.mounts).map(function(mKey) {
+          return mKey + ':' + self.options.mounts[mKey];
+        }))
       };
 
       syncExecute(buildArgs, function(err, result) {
         console.dir(err || result);
-        if(err) return cb(err);
+        if (err) return cb(err);
         cb();
       }, 30000);
 
@@ -170,20 +183,22 @@ function DynoStateMachine(options) {
 
   };
 
-  self.afterStart = function(){
-    
-    setTimeout(timeoutIfNotConnected, 2500);
-    
+  self.afterStart = function() {
+
+    setTimeout(timeoutIfNotConnected, 7500);
+
     function timeoutIfNotConnected() {
-      if(self.ioSocket && self.commandSocket) return;
-     
+      if (self.ioSocket && self.commandSocket) return;
+
       self.ioServer.close();
       self.commandServer.close();
-      var tailLogArgs = ({ command: '/usr/bin/tail', 
-                          args: ['-n20','run_' + self.id + '.txt'] });
+      var tailLogArgs = ({
+        command: '/usr/bin/tail',
+        args: ['-n20', 'run_' + self.id + '.txt']
+      });
       syncExecute(tailLogArgs, function(tailError, tailResult) {
         var effectiveResult = tailError || tailResult;
-        if(effectiveResult.output.indexOf('No cgroup mounted') !== -1) {
+        if (effectiveResult.output.indexOf('No cgroup mounted') !== -1) {
           console.error(self.id + ' - No cgroup mounted on host system.');
         } else {
           console.error(self.id + ' - timeout sockets not connected - ' + effectiveResult.output);
@@ -196,17 +211,19 @@ function DynoStateMachine(options) {
   function getPort() {
     // allocate from block range
     // check not used from bad previous shutdown
-
     // temp: somethingg from 10000  - 20000;
     return Math.ceil(Math.random() * 10000) + 10000;
   }
 
   self.fn.run = function(cb) {
 
-    var env  = options.env_vars;
+    var env = options.env_vars;
     var cleanPort = getPort();
     env.PORT = cleanPort.toString();
 
+    env.http_proxy = env.http_proxy || process.env.http_proxy;
+    env.https_proxy = env.http_proxy || process.env.https_proxy;
+    
     var command = {
       type: 'do',
       attached: options.attached,
@@ -216,25 +233,27 @@ function DynoStateMachine(options) {
       env_vars: env
     };
 
-    console.log(self.id + ' - Dispatch command: ' + command.command + ' ' + command.args.join(' '));
     self.commandSocket.write(JSON.stringify(command) + '\n');
     cb();
   };
 
   self.fn.stop = function() {
 
-    if(self.isStopping) return;
+    if (self.isStopping) return;
 
     self.isStopping = true;
-    if(self.commandSocket) {
-      self.commandSocket.write(JSON.stringify({ type: 'stop' }) + '\n');
+    if (self.commandSocket) {
+      console.log(self.id + ' - Dispatch command: ' + command.command + ' ' + command.args.join(' '));
+      self.commandSocket.write(JSON.stringify({
+        type: 'stop'
+      }) + '\n');
     }
 
 
     setTimeout(function() {
-    
-      if(self.commandSocket) self.commandSocket.destroy();
-      if(self.ioSocket) self.ioSocket.destroy();
+
+      if (self.commandSocket) self.commandSocket.destroy();
+      if (self.ioSocket) self.ioSocket.destroy();
 
       console.log(self.id + ' - Cleaning up dyno');
       var cleanUpInstructions = {
@@ -248,20 +267,25 @@ function DynoStateMachine(options) {
         self.emit('exited');
       });
 
-    },1000);
+    }, 1000);
   };
 
 }
 
 
 function buildSocketServer(dyno_id, prefix) {
-  var socketDir=path.join(process.env.SOCKET_PATH,dyno_id);
-  var socketPath=path.join(socketDir,prefix + '.sock');
-  if(!fs.existsSync(socketDir)) {
+  var socketDir = path.join(process.env.SOCKET_PATH, dyno_id);
+  var socketPath = path.join(socketDir, prefix + '.sock');
+  if (!fs.existsSync(socketDir)) {
     fs.mkdirSync(socketDir);
   }
+  console.log("creating to socket path ", socketPath);
   var server = net.createServer();
-  server.listen(socketPath);
+  server.listen(socketPath, function() {
+  });
+  server.on('error', function(err) {
+    console.error(err);
+  });
   return server;
 }
 
@@ -279,8 +303,8 @@ function syncExecute(instructions, cb, timeout) {
 
   inst.stdout.setEncoding('utf8');
   inst.stdout.on('data', function(data) {
-    stdout +=  data;
-    combined +=  data;
+    stdout += data;
+    combined += data;
   });
 
   inst.stderr.setEncoding('utf8');
@@ -291,10 +315,10 @@ function syncExecute(instructions, cb, timeout) {
   var completed = false;
   var timeoutId;
 
-  if(typeof timeout !== undefined) {
+  if (typeof timeout !== undefined) {
 
     timeoutId = setTimeout(function() {
-      if(!completed) {
+      if (!completed) {
         inst.kill('SIGKILL');
         inst.stdin.destroy();
         inst.stdout.destroy();
@@ -305,9 +329,9 @@ function syncExecute(instructions, cb, timeout) {
 
   inst.on('exit', function(code) {
     completed = true;
-    if(timeoutId) clearTimeout(timeoutId);
+    if (timeoutId) clearTimeout(timeoutId);
     inst.on('close', function() {
-      if(code === 0) {
+      if (code === 0) {
         var result = {
           returnCode: code,
           output: combined
@@ -318,10 +342,8 @@ function syncExecute(instructions, cb, timeout) {
           returnCode: code,
           output: combined
         };
-        cb(errResult,null);
+        cb(errResult, null);
       }
     });
   });
 }
-
-

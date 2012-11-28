@@ -40,7 +40,7 @@ fi
 
 echo "Cleaning up previously dynos"
 rm -fr run_*
-rm -fr /var/lib/lxc/*
+#rm -fr /var/lib/lxc/*
 
 echo "Booting main app"
 exec dynohost/bin/dynohost
