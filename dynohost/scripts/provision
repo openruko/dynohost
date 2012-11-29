@@ -92,25 +92,54 @@ for mount in "${mounts[@]}"; do
 
 done
 
+  #mkdir -p $dyno_dir/rootfs/dev/
+  #mkdir -p $dyno_dir/rootfs/dev/pts
+
 echo "Setting up devices"
 
 dyno_temp_dir="$dyno_dir/rootfs/tmp"
 mkdir -p "$dyno_temp_dir"
 chmod 1777 "$dyno_temp_dir"
 
+DEV="$dyno_dir/rootfs/dev"
+mkdir -p ${DEV}
+mkdir -p ${DEV}/lxc
+mknod -m 666 ${DEV}/null c 1 3
+mknod -m 666 ${DEV}/zero c 1 5
+mknod -m 666 ${DEV}/random c 1 8
+mknod -m 666 ${DEV}/urandom c 1 9
+mkdir -m 755 ${DEV}/pts
+mkdir -m 1777 ${DEV}/shm
+mkdir -m 1777 ${DEV}/fd
+mknod -m 666 ${DEV}/tty c 5 0
+mknod -m 600 ${DEV}/console c 5 1
+mknod -m 600 ${DEV}/lxc/console c 5 1
+mknod -m 666 ${DEV}/tty0 c 4 0
+mknod -m 600 ${DEV}/tty1 c 4 0
+mknod -m 600 ${DEV}/tty2 c 4 0
+mknod -m 600 ${DEV}/tty3 c 4 0
+mknod -m 600 ${DEV}/tty4 c 4 0
+mknod -m 600 ${DEV}/lxc/tty1 c 4 0
+mknod -m 600 ${DEV}/lxc/tty2 c 4 0
+mknod -m 600 ${DEV}/lxc/tty3 c 4 0
+mknod -m 600 ${DEV}/lxc/tty4 c 4 0
+mknod -m 666 ${DEV}/full c 1 7
+# mknod -m 600 ${DEV}/initctl p 
+mknod -m 666 ${DEV}/ptmx c 5 2
+
 # TODO Add memory and CPU limits
 cat <<CONFIG >$lxc_dir/$dyno_id/config
 lxc.utsname = $dyno_id
 lxc.pts = 1024
 lxc.tty = 4
-lxc.rootfs = /var/lib/lxc/model2/rootfs
+lxc.rootfs = /var/lib/lxc/$dyno_id/rootfs
 lxc.mount = $dyno_dir/fstab
 lxc.network.type=veth
 lxc.network.link=lxcbr0
 lxc.network.flags=up
 lxc.utsname = $dyno_id
 CONFIG
-
+#lxc.cap.drop=sys_admin
 cat <<PASSWD >$lxc_dir/$dyno_id/rootfs/etc/passwd
 root:x:0:0:root:/root:/bin/bash
 rukouser:x:1666:666:guest user:/app:/bin/bash
@@ -124,6 +153,13 @@ fstemplate=default
 
 
 cat <<FSCONFIG >$dyno_dir/fstab
+/var/lib/lxc/model2/rootfs/lib /$lxc_dir/$dyno_id/rootfs/lib none ro,bind 0 0
+/var/lib/lxc/model2/rootfs/lib64 /$lxc_dir/$dyno_id/rootfs/lib64 none ro,bind 0 0
+/var/lib/lxc/model2/rootfs/usr /$lxc_dir/$dyno_id/rootfs/usr none ro,bind 0 0
+/var/lib/lxc/model2/rootfs/bin /$lxc_dir/$dyno_id/rootfs/bin none ro,bind 0 0
+/var/lib/lxc/model2/rootfs/sbin /$lxc_dir/$dyno_id/rootfs/sbin none ro,bind 0 0
+/var/lib/lxc/model2/rootfs/etc /$lxc_dir/$dyno_id/rootfs/etc none ro,bind 0 0
+#/var/lib/lxc/model2/rootfs/dev /$lxc_dir/$dyno_id/rootfs/dev none ro,bind 0 0
 proc            proc         proc    nodev,noexec,nosuid 0 0
 sysfs           sys          sysfs defaults  0 0
 $dyno_dir/rootfs/app $dyno_dir/rootfs/app none bind 0 0
@@ -135,7 +171,7 @@ FSCONFIG
 echo "condon path : $CODONHOOKS_PATH"
 
 if [ "$(basename $0)" = 'build-provision' ];  then
-  echo "$CODONHOOKS_PATH $dyno_dir/rootfs/root/app/hooks none bind 0 0" >> $dyno_dir/fstab
+ # echo "$CODONHOOKS_PATH $dyno_dir/rootfs/root/app/hooks none bind 0 0" >> $dyno_dir/fstab
   echo "$CODONHOOKS_PATH $dyno_dir/rootfs/app/hooks none bind 0 0" >> $dyno_dir/fstab
 fi
 
