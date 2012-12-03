@@ -101,6 +101,8 @@ dyno_temp_dir="$dyno_dir/rootfs/tmp"
 mkdir -p "$dyno_temp_dir"
 chmod 1777 "$dyno_temp_dir"
 
+mkdir -p "$dyno_dir/rootfs/run"
+
 DEV="$dyno_dir/rootfs/dev"
 mkdir -p ${DEV}
 mkdir -p ${DEV}/lxc
@@ -138,8 +140,9 @@ lxc.network.type=veth
 lxc.network.link=lxcbr0
 lxc.network.flags=up
 lxc.utsname = $dyno_id
+lxc.cap.drop=sys_admin
 CONFIG
-#lxc.cap.drop=sys_admin
+
 cat <<PASSWD >$lxc_dir/$dyno_id/rootfs/etc/passwd
 root:x:0:0:root:/root:/bin/bash
 rukouser:x:1666:666:guest user:/app:/bin/bash
@@ -166,8 +169,9 @@ $dyno_dir/rootfs/app $dyno_dir/rootfs/app none bind 0 0
 $RUKORUN_PATH $dyno_dir/rootfs/root/ps-run none bind 0 0
 $socket_dir $dyno_dir/rootfs/root/sockets none bind 0 0
 $dyno_dir/rootfs/tmp $dyno_dir/rootfs/tmp none bind 0 0
+run  run tmpfs  noexec,nosuid,mode=0755  0 0
 FSCONFIG
-
+  
 echo "condon path : $CODONHOOKS_PATH"
 
 if [ "$(basename $0)" = 'build-provision' ];  then
