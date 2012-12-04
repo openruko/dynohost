@@ -41,8 +41,8 @@ function DynoStateMachine(options) {
   };
 
 
-  if(!options.attached) {
-    self.logplexClient=new LogPlexClient(self.options.logplex_id);
+  if (!options.attached) {
+    self.logplexClient = new LogPlexClient(self.options.logplex_id);
 
     self.on('stateChanged', function(state) {
       if(state === 'listening') {
@@ -107,6 +107,7 @@ function DynoStateMachine(options) {
   self.ioServer.on('connection', handleConnection('ioSocket'));
 
   var connCount = 0;
+
   function handleConnection(socketName) {
     return function(socket) {
       console.log(self.id + ' - Socket ' + socketName + ' connected');
@@ -138,8 +139,8 @@ function DynoStateMachine(options) {
     };
   }
 
-  self.fn = {}; 
-  self.fn.start = function(cb) { 
+  self.fn = {};
+  self.fn.start = function(cb) {
 
     var provisionScript = 'dynohost/scripts/' + self.options.template + '-provision';
 
@@ -197,7 +198,6 @@ function DynoStateMachine(options) {
   function getPort() {
     // allocate from block range
     // check not used from bad previous shutdown
-
     // temp: somethingg from 10000  - 20000;
     return Math.ceil(Math.random() * 10000) + 10000;
   }
@@ -208,6 +208,9 @@ function DynoStateMachine(options) {
     var cleanPort = getPort();
     env.PORT = cleanPort.toString();
 
+    env.http_proxy = env.http_proxy || process.env.http_proxy;
+    env.https_proxy = env.http_proxy || process.env.https_proxy;
+    
     var command = {
       type: 'do',
       attached: options.attached,

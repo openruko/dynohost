@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# put overriding env vars in local.env, do not checkin to git
+if [ -f local.env ]; then
+  source local.env
+fi
+
+export API_BASE_URL=${API_BASE_URL:-"http://localhost:5000/"} #dont forget trailing slash
+export LOGPLEX_SERVER=${LOGPLEX_SERVER:-"localhost:9999"}
+export LOGPLEX_ID=${LOGPLEX_ID:-abc-def-fgh-ijk-678}
+export PROCLITE_PORT=${PROCLITE_PORT:-4000}
+export PROCLITE_SECRET=${PROCLITE_SECRET:-abc-def-fgh-ijk-klc}
+export PRIVATE_KEY=${PRIVATE_KEY:-"certs/server.pem"}
+export PUBLIC_KEY=${PUBLIC_KEY:-"certs/server.pem"}
+export RUKORUN_PATH=${RUKORUN_PATH:-/root/rk/rukorun}
+export CODONHOOKS_PATH=${CODONHOOKS_PATH:-/root/rk/codonhooks}
+export SOCKET_PATH=${SOCKET_PATH:-/root/rk/dynohost/sockets}
+export API_SERVER_KEY=${API_SERVER_KEY:-"aaa-bbb-ccc-ddd-eee"}
+
+if [ ! -d "$SOCKET_PATH" ]; then
+  mkdir -p $SOCKET_PATH
+fi
+
+mkdir -p logs
+export LOG_DIR=logs/
+
+echo "Starting dyno controller"
+
+if [ "$UID" -ne 0 ]; then
+  echo "Dyno controller must run as root - sudo ./debug.launch" 1>&2
+  exit 1
+fi
+
+mount | grep cgroup > /dev/null
+
+if [ "$?" != "0" ];  then
+  echo "Cgroups must be mounted  - mount -t cgroup none /cgroup" 1>&2
+  exit 1
+fi
+
+echo "Cleaning up previously dynos"
+rm -fr run_*
+#rm -fr /var/lib/lxc/*
+
+echo "Booting main app"
+exec dynohost/bin/dynohost
