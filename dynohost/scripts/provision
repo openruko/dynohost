@@ -45,7 +45,6 @@ s3_repo_code=$(curl -L -s -o /dev/null -w "%{http_code}" "${s3_repo_url#*:}")
 
 if [ "$(basename $0)" = 'build-provision' ];  then
   # TODO if 403 Not Authorized print a warning
-  echo "Mount before : $mounts"
   if [ "$s3_repo_code" = "404" ]; then
     mounts=("/app:file://emptyrepo.tgz" ${@:5})
   fi
@@ -70,13 +69,9 @@ for mount in "${mounts[@]}"; do
   fi
 
   if [[ "$mount_url" == file* ]]; then
-    echo "Mount file"
     echo "assets/${mount_url#*//}"
     mtmpmount=${mount_url#*//};
-    echo "mtmpmount $mtmpmount"
     finalmount=${mtmpmount%%.tgz};
-      echo "finalmount $finalmount"
-      echo " cp -r  assets/$finalmount $dyno_dir/rootfs/$mount_point"
     cp -r  assets/$finalmount/* $dyno_dir/rootfs/$mount_point/
   fi
   #else
@@ -89,9 +84,6 @@ for mount in "${mounts[@]}"; do
   chmod -R g-s "$dyno_dir/rootfs/$mount_point"
 
 done
-
-  #mkdir -p $dyno_dir/rootfs/dev/
-  #mkdir -p $dyno_dir/rootfs/dev/pts
 
 echo "Setting up devices"
 
@@ -161,7 +153,6 @@ cat <<FSCONFIG >$dyno_dir/fstab
 /var/lib/lxc/$lxcModel/rootfs/bin /$lxc_dir/$dyno_id/rootfs/bin none ro,bind 0 0
 /var/lib/lxc/$lxcModel/rootfs/sbin /$lxc_dir/$dyno_id/rootfs/sbin none ro,bind 0 0
 /var/lib/lxc/$lxcModel/rootfs/etc /$lxc_dir/$dyno_id/rootfs/etc none ro,bind 0 0
-#/var/lib/lxc/$lxcModel/rootfs/dev /$lxc_dir/$dyno_id/rootfs/dev none ro,bind 0 0
 proc            proc         proc    nodev,noexec,nosuid 0 0
 sysfs           sys          sysfs defaults  0 0
 $dyno_dir/rootfs/app $dyno_dir/rootfs/app none bind 0 0
@@ -170,8 +161,6 @@ $socket_dir $dyno_dir/rootfs/root/sockets none bind 0 0
 $dyno_dir/rootfs/tmp $dyno_dir/rootfs/tmp none bind 0 0
 run  run tmpfs  noexec,nosuid,mode=0755  0 0
 FSCONFIG
-  
-echo "condon path : $CODONHOOKS_PATH"
 
 if [ "$(basename $0)" = 'build-provision' ];  then
   echo "$CODONHOOKS_PATH $dyno_dir/rootfs/app/hooks none bind 0 0" >> $dyno_dir/fstab
