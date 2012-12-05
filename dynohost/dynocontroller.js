@@ -174,7 +174,7 @@ function DynoStateMachine(options) {
 
   self.afterStart = function(){
     
-    setTimeout(timeoutIfNotConnected, 2500);
+    setTimeout(timeoutIfNotConnected, 15000);
     
     function timeoutIfNotConnected() {
       if(self.ioSocket && self.commandSocket) return;
