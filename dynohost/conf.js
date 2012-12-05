@@ -1,7 +1,7 @@
 var env = process.env;
 
 ['APISERVER_KEY', 'RUKORUN_PATH', 'CODONHOOKS_PATH'].forEach(function(envKey) {
-  if(env[envKey] === undefined) {
+  if(!env[envKey]) {
     throw new Error('Environment variables ' + envKey + ' must be defined.');
   }
 });
