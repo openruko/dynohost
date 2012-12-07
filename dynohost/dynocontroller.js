@@ -12,7 +12,7 @@ var conf = require('./conf')
 module.exports = DynoStateMachine;
 DynoStateMachine.prototype = new EventEmitter();
 
-function DynoStateMachine(options) { 
+function DynoStateMachine(options) {
 
   var self = this;
   self.id = options.dyno_id;
@@ -65,25 +65,25 @@ function DynoStateMachine(options) {
   actions.forEach(function(action) {
     self[action.name] = function(cb) {
 
-      console.log(self.id + ' - Executing ' + action.name + ' (current state: ' + 
+      console.log(self.id + ' - Executing ' + action.name + ' (current state: ' +
                self.currentState + ')');
 
       if(action.from && self.currentState !== action.from) {
-        return cb && cb({ error: 'must be in state ' + action.from + 
+        return cb && cb({ error: 'must be in state ' + action.from +
                   ' when call ' + action.name});
       }
 
       self.fn[action.name](function(actionError) {
         if(actionError) {
           setState('errored');
-          return cb && cb({ error: 'unable to transition', 
+          return cb && cb({ error: 'unable to transition',
                     internalError: actionError });
         }
-        var afterName = 'after' + action.name.substr(0,1).toUpperCase() + 
+        var afterName = 'after' + action.name.substr(0,1).toUpperCase() +
           action.name.substr(1);
         if(self[afterName]) {
-          self[afterName]();  
-        } 
+          self[afterName]();
+        }
         setState(action.to);
         return cb && cb();
       });
@@ -138,8 +138,8 @@ function DynoStateMachine(options) {
     };
   }
 
-  self.fn = {}; 
-  self.fn.start = function(cb) { 
+  self.fn = {};
+  self.fn.start = function(cb) {
 
     var provisionScript = 'dynohost/scripts/' + self.options.template + '-provision';
 
@@ -151,10 +151,10 @@ function DynoStateMachine(options) {
 
       console.log(self.id + ' - provisioning with ' + provisionScript);
 
-      var buildArgs = { 
-        command: '/bin/bash', 
+      var buildArgs = {
+        command: '/bin/bash',
         args: [provisionScript,
-          options.dyno_id, 
+          options.dyno_id,
           path.join(conf.dynohost.socketPath, self.id),
           path.join(conf.dynohost.socketPath, self.id)].concat(Object.keys(self.options.mounts).map(function(mKey) {
             return mKey + ':' + self.options.mounts[mKey];
@@ -172,15 +172,15 @@ function DynoStateMachine(options) {
   };
 
   self.afterStart = function(){
-    
-    setTimeout(timeoutIfNotConnected, 2500);
-    
+
+    setTimeout(timeoutIfNotConnected, 15000);
+
     function timeoutIfNotConnected() {
       if(self.ioSocket && self.commandSocket) return;
-     
+
       self.ioServer.close();
       self.commandServer.close();
-      var tailLogArgs = ({ command: '/usr/bin/tail', 
+      var tailLogArgs = ({ command: '/usr/bin/tail',
                           args: ['-n20','run_' + self.id + '.txt'] });
       syncExecute(tailLogArgs, function(tailError, tailResult) {
         var effectiveResult = tailError || tailResult;
@@ -233,7 +233,7 @@ function DynoStateMachine(options) {
 
 
     setTimeout(function() {
-    
+
       if(self.commandSocket) self.commandSocket.destroy();
       if(self.ioSocket) self.ioSocket.destroy();
 

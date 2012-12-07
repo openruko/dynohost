@@ -25,7 +25,7 @@ exec('mount | grep cgroup', handleExec);
 
 // TODO handle it with node API
 exec('rm -fr run_*', handleExec);
-exec('rm -fr /var/lib/lxc/*', handleExec);
+//exec('rm -fr /var/lib/lxc/*', handleExec);
 
 console.log('Booting dyno server v' + version);
 

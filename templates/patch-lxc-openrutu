@@ -1,0 +1,51 @@
+--- /usr/lib/lxc/templates/lxc-ubuntu	2012-11-07 20:59:16.000000000 +0100
++++ templates/lxc-openrutu	2012-12-04 19:51:58.000000000 +0100
+@@ -426,6 +426,7 @@
+ exec /sbin/getty -8 38400 /dev/console
+ EOF
+ 
++
+     cat <<EOF > $rootfs/lib/init/fstab
+ # /lib/init/fstab: cleared out for bare-bones lxc
+ EOF
+@@ -518,6 +519,40 @@
+         mv $rootfs/dev/shm $rootfs/dev/shm.bak
+         ln -s /run/shm $rootfs/dev/shm
+     fi
++
++    cat <<EOF > $rootfs/etc/init/openrukolaunch.conf
++# openrukolaunch
++#
++# This service launch the openruko nodeboot daemon
++
++start on stopped rc RUNLEVEL=[2345] and container CONTAINER=lxc
++
++stop on runlevel [!2345]
++
++script
++/root/ps-run/nodeboot
++end script
++EOF
++    cat <<EOF > $rootfs/etc/mtab
++/dev/mapper/ubuntu-root / ext4 rw 0 0
++proc /proc proc rw,noexec,nosuid,nodev 0 0
++sysfs /sys sysfs rw,noexec,nosuid,nodev 0 0
++devpts /dev/pts devpts rw,noexec,nosuid,gid=5,mode=0620 0 0
++devpts /dev/lxc/console devpts rw,noexec,nosuid,relatime,mode=600,ptmxmode=000 0 0
++devpts /dev/lxc/tty1 devpts rw,noexec,nosuid,relatime,mode=600,ptmxmode=000 0 0
++devpts /dev/lxc/tty2 devpts rw,noexec,nosuid,relatime,mode=600,ptmxmode=000 0 0
++devpts /dev/lxc/tty3 devpts rw,noexec,nosuid,relatime,mode=600,ptmxmode=000 0 0
++devpts /dev/lxc/tty4 devpts rw,noexec,nosuid,relatime,mode=600,ptmxmode=000 0 0
++devpts /dev/ptmx devpts rw,relatime,mode=600,ptmxmode=666 0 0
++none /run/lock tmpfs rw,noexec,nosuid,nodev,size=5242880 0 0
++none /run/shm tmpfs rw,nosuid,nodev 0 0
++EOF
++
++    rm -rf $rootfs/etc/init/mounted-tmp.conf
++    chroot $rootfs apt-get update
++    chroot $rootfs apt-get install --force-yes -y libssl0.9.8 git curl nodejs
++    mkdir -p $rootfs/app/hooks
++
+ }
+ 
+ do_bindhome()

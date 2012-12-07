@@ -5,3 +5,4 @@ assets/
 node_modules/
 *.log
 run_*.txt
+templates/lxc-openrutu

@@ -4,14 +4,19 @@ init:
 	mkdir -p assets/
 	mkdir -p sockets/
 	@echo "Download buildpack"
-	curl -o assets/buildpacks.tgz https://buildkits.herokuapp.com/buildkit/default.tgz 
+	curl -s -o assets/buildpacks.tgz https://buildkits.herokuapp.com/buildkit/default.tgz
+	mkdir -p assets/buildpacks/
+	tar xzf assets/buildpacks.tgz -C assets/buildpacks/
 	mkdir assets/emptyrepo
 	git init --bare assets/emptyrepo
-	tar czf assets/emptyrepo.tgz -C assets/emptyrepo .
-	rm -fr assets/emptyrepo
 	@echo "Install npm modules"
 	npm install .
 	@echo "Optionally run make certs to generate test certs"
+	cp /usr/lib/lxc/templates/lxc-ubuntu templates/lxc-openrutu
+	patch templates/lxc-openrutu < templates/patch-lxc-openrutu
+	sudo mount -o bind templates /usr/lib/lxc/templates
+	sudo lxc-create -t openrutu -n openrutu-model
+	sudo umount /usr/lib/lxc/templates
 
 certs: 
 	mkdir -p certs/
