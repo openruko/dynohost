@@ -12,6 +12,8 @@ init:
 	@echo "Install npm modules"
 	npm install .
 	@echo "Optionally run make certs to generate test certs"
+	cp /usr/lib/lxc/templates/lxc-ubuntu templates/lxc-openrutu
+	patch templates/lxc-openrutu < templates/patch-lxc-openrutu
 	sudo mount -o bind templates /usr/lib/lxc/templates
 	sudo lxc-create -t openrutu -n openrutu-model
 	sudo umount /usr/lib/lxc/templates
