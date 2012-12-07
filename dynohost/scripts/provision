@@ -48,7 +48,6 @@ if [ "$(basename $0)" = 'build-provision' ];  then
   if [ "$s3_repo_code" = "404" ]; then
     mounts=("/app:file://emptyrepo.tgz" ${@:5})
   fi
-  echo "Mount after : $mounts"
 fi
 
 echo "Setting up mounts"
@@ -61,6 +60,7 @@ for mount in "${mounts[@]}"; do
   # create the mount point within the container
   mkdir -p $dyno_dir/rootfs/$mount_point
 
+  echo "Fetching $mount_url"
   # support protocols file/// and http://
   # extract the gzipped tar, dont bother with squashfs
   #if s3url starts with http
