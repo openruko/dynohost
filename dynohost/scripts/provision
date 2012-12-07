@@ -65,7 +65,7 @@ for mount in "${mounts[@]}"; do
   # extract the gzipped tar, dont bother with squashfs
   #if s3url starts with http
   if [[ "$mount_url" == http* ]]; then
-    curl -s -L $mount_url | tar -z -x -C "$dyno_dir/rootfs/$mount_point"
+    curl $mount_url | tar -z -x -C "$dyno_dir/rootfs/$mount_point"
   fi
 
   if [[ "$mount_url" == file* ]]; then
