@@ -86,7 +86,8 @@ function DynoHostServer() {
           dynoId: job.dyno_id,
           instanceId: job.instance_id,
           state: state,
-          appId: job.app_id
+          appId: job.app_id,
+          port: dyno.port
         });
       });
       dyno.start();
