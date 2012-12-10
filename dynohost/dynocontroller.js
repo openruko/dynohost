@@ -18,6 +18,7 @@ function DynoStateMachine(options) {
   self.id = options.dyno_id;
   self.options = options;
   self.currentState = 'idle';
+  self.port = undefined;
 
   // stuff we can do to the dyno
   var actions = [
@@ -205,8 +206,8 @@ function DynoStateMachine(options) {
   self.fn.run = function(cb) {
 
     var env  = options.env_vars;
-    var cleanPort = getPort();
-    env.PORT = cleanPort.toString();
+    self.port = getPort();
+    env.PORT = self.port.toString();
 
     var command = {
       type: 'do',
