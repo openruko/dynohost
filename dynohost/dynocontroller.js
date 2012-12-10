@@ -121,18 +121,14 @@ function DynoStateMachine(options) {
           //console.log(self.id + ' - Received some data');
           self.emit('data', data);
         });
-        self.commandSocket.on('data', function(status) {
-          status = status.toString().split('\n')[0]; // remove trailing line
-          console.log(self.id + ' - Status from dyno: ' + status);
+        self.commandSocket.on('data', function(json) {
+          var msg = JSON.parse(json.toString());
           if(self.logplexClient) {
-            // TODO: diff logplex for state changes
-            // record previous state - from x to y
-            self.logplexClient.write('State changed to ' + status);
+            self.logplexClient.write(msg.message);
           }
 
-          if(status.toString().indexOf('exit') !== -1) {
-            var statStr = status.toString();
-            self.exitCode = +(statStr.substr(7));
+          if(msg.type === 'exit'){
+            self.exitCode = msg.code;
             self.fire('exit');
           }
         });
@@ -221,7 +217,6 @@ function DynoStateMachine(options) {
       npm_config_registry: 'http://registry.npmjs.org'
     });
 
-    env.PORT = cleanPort.toString();
     self.port = getPort();
     env.PORT = self.port.toString();
 
@@ -248,7 +243,7 @@ function DynoStateMachine(options) {
       self.commandSocket.write(JSON.stringify({ type: 'stop' }) + '\n');
     }
 
-
+    // Max Timeout is 10s, after wihich SIGKILL is sent to every processes
     setTimeout(function() {
     
       if(self.commandSocket) self.commandSocket.destroy();
@@ -266,7 +261,7 @@ function DynoStateMachine(options) {
         self.emit('exited');
       });
 
-    },1000);
+    },11000);
   };
 
 }
