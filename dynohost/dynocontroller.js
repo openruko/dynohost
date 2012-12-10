@@ -19,6 +19,7 @@ function DynoStateMachine(options) {
   self.id = options.dyno_id;
   self.options = options;
   self.currentState = 'idle';
+  self.port = undefined;
 
   // stuff we can do to the dyno
   var actions = [
@@ -220,8 +221,9 @@ function DynoStateMachine(options) {
       npm_config_registry: 'http://registry.npmjs.org'
     });
 
-    var cleanPort = getPort();
     env.PORT = cleanPort.toString();
+    self.port = getPort();
+    env.PORT = self.port.toString();
 
     var command = {
       type: 'do',
