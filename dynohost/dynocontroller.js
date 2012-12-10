@@ -8,6 +8,7 @@ var LogPlexClient = require('./logplex');
 var request = require('request');
 var path = require('path');
 var conf = require('./conf')
+var _ = require('underscore');
 
 module.exports = DynoStateMachine;
 DynoStateMachine.prototype = new EventEmitter();
@@ -205,7 +206,22 @@ function DynoStateMachine(options) {
 
   self.fn.run = function(cb) {
 
-    var env  = options.env_vars;
+    var env  = _(options.env_vars).defaults({
+      http_proxy: process.env.http_proxy,
+      HTTP_PROXY: process.env.HTTP_PROXY,
+      https_proxy: process.env.https_proxy,
+      HTTPS_PROXY: process.env.HTTPS_PROXY,
+      no_proxy: process.env.no_proxy,
+      NO_PROXY: process.env.NO_PROXY,
+
+      // For people behind a proxy, proxy should accept npm CA cert
+      // https://github.com/isaacs/npm/issues/1977#issuecomment-3761590
+      //
+      // I hope not to do this for each buildpack
+      npm_config_registry: 'http://registry.npmjs.org'
+    });
+
+    env.PORT = cleanPort.toString();
     self.port = getPort();
     env.PORT = self.port.toString();
 

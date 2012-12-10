@@ -25,6 +25,10 @@ cd $dyno_dir/rootfs
 mkdir -p root/ps-run root/sockets proc sys usr etc/ssl etc/alternatives sbin bin lib lib64 
 
 cat <<EOF > etc/resolv.conf
+# Use host resolv.conf
+`cat /etc/resolv.conf`
+
+# Also use google DNS
 nameserver 8.8.8.8
 nameserver 8.8.4.4
 EOF
@@ -38,7 +42,7 @@ $dyno_id
 EOF
 
 cat <<EOF > etc/hosts
-127.0.0.1       localhost
+127.0.0.1       localhost mymachine.me
 127.0.0.1       $dyno_id
 EOF
 )
@@ -46,7 +50,7 @@ EOF
 mounts=(${@:4})
 
 s3_repo_url=$4
-s3_repo_code=$(curl -s -o /dev/null -w "%{http_code}" "${s3_repo_url#*:}")
+s3_repo_code=$(curl -L -s -o /dev/null -w "%{http_code}" "${s3_repo_url#*:}")
 
 if [ "$(basename $0)" = 'build-provision' ];  then
   # TODO if 403 Not Authorized print a warning
@@ -70,7 +74,7 @@ for mount in "${mounts[@]}"; do
   # extract the gzipped tar, dont bother with squashfs
   #if s3url starts with http
   if [[ "$mount_url" == http* ]]; then
-    curl $mount_url | tar -z -x -C "$dyno_dir/rootfs/$mount_point"
+    curl -L $mount_url | tar -z -x -C "$dyno_dir/rootfs/$mount_point"
   fi
 
   if [[ "$mount_url" == file* ]]; then
