@@ -101,8 +101,8 @@ function DynoStateMachine(options) {
     }
   };
 
-  self.commandServer = buildSocketServer(self.id,'command');
-  self.ioServer = buildSocketServer(self.id,'io');
+  self.commandServer = self.buildSocketServer(self.id,'command');
+  self.ioServer = self.buildSocketServer(self.id,'io');
 
   self.commandServer.on('connection', handleConnection('commandSocket'));
   self.ioServer.on('connection', handleConnection('ioSocket'));
@@ -152,13 +152,14 @@ function DynoStateMachine(options) {
         command: '/bin/bash', 
         args: [provisionScript,
           options.dyno_id, 
+          // TODO why twice the same path
           path.join(conf.dynohost.socketPath, self.id),
           path.join(conf.dynohost.socketPath, self.id)].concat(Object.keys(self.options.mounts).map(function(mKey) {
             return mKey + ':' + self.options.mounts[mKey];
           }))
       };
 
-      syncExecute(buildArgs, function(err, result) {
+      self.syncExecute(buildArgs, function(err, result) {
         console.dir(err || result);
         if(err) return cb(err);
         cb();
@@ -179,7 +180,7 @@ function DynoStateMachine(options) {
       self.commandServer.close();
       var tailLogArgs = ({ command: '/usr/bin/tail', 
                           args: ['-n20','run_' + self.id + '.txt'] });
-      syncExecute(tailLogArgs, function(tailError, tailResult) {
+      self.syncExecute(tailLogArgs, function(tailError, tailResult) {
         var effectiveResult = tailError || tailResult;
         if(effectiveResult.output.indexOf('No cgroup mounted') !== -1) {
           console.error(self.id + ' - No cgroup mounted on host system.');
@@ -253,7 +254,7 @@ function DynoStateMachine(options) {
         command: '/bin/bash',
         args: ['scripts/cleanup', self.id]
       };
-      syncExecute(cleanUpInstructions, function() {
+      self.syncExecute(cleanUpInstructions, function() {
         console.log(self.id + ' - Cleaned up');
         self.status = 'completed';
         self.exitCode = 1;
@@ -266,7 +267,7 @@ function DynoStateMachine(options) {
 }
 
 
-function buildSocketServer(dyno_id, prefix) {
+DynoStateMachine.prototype.buildSocketServer = function(dyno_id, prefix) {
   var socketDir=path.join(conf.dynohost.socketPath, dyno_id);
   var socketPath=path.join(socketDir,prefix + '.sock');
   if(!fs.existsSync(socketDir)) {
@@ -275,9 +276,9 @@ function buildSocketServer(dyno_id, prefix) {
   var server = net.createServer();
   server.listen(socketPath);
   return server;
-}
+};
 
-function syncExecute(instructions, cb, timeout) {
+DynoStateMachine.prototype.syncExecute = function (instructions, cb, timeout) {
 
   var stdout = '';
   var stderr = '';
@@ -334,6 +335,6 @@ function syncExecute(instructions, cb, timeout) {
       }
     });
   });
-}
+};
 
 
