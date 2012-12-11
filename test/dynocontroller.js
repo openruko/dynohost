@@ -98,7 +98,7 @@ describe('dynocontroller', function(){
         });
       });
 
-      it('should send `do` command to rukorun via the commmand socket', function(done){
+      it('should send `do` command to rukorun', function(done){
         rukorunMock.sockets.command.once('data', function(data){
           data = JSON.parse(data);
           expect(data.type).to.be.equal('do');
@@ -111,19 +111,30 @@ describe('dynocontroller', function(){
         });
       });
 
-      describe('when the dyno send an exit message', function(){
+      describe('when the dyno send an exit message', function()
         beforeEach(function(done){
-          rukorunMock.sockets.command.write(JSON.stringify({
-            type: 'exit',
-            code: 1234,
-            message: 'Exit'
-          }) + '\n');
-          done();
+          // wait for do command to be emited before sending stop command
+          rukorunMock.sockets.command.once('data', function(data){
+            rukorunMock.sockets.command.write(JSON.stringify({
+              type: 'exit',
+              code: 1234,
+              message: 'Exit'
+            }) + '\n');
+            done();
+          });
         });
 
         it('should change its state to `completed`', function(done){
           dynoController.once('stateChanging', function(state){
             expect(state).to.be.equal('completed');
+            done();
+          });
+        });
+
+        it('should send `stop` command to rukorun', function(done){
+          rukorunMock.sockets.command.once('data', function(data){
+            data = JSON.parse(data.toString());
+            expect(data.type).to.be.equal('stop');
             done();
           });
         });
