@@ -1,5 +1,4 @@
 var async = require('async');
-var uuid = require('node-uuid');
 var spawn = require('child_process').spawn;
 var net = require('net');
 var EventEmitter = require('events').EventEmitter;
