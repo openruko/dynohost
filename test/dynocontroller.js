@@ -46,6 +46,7 @@ describe('dynocontroller', function(){
           output: "Hello"
         });
       };
+      dynoController.afterStartTimeout = 300;
       dynoController.start();
       done();
     });
@@ -67,6 +68,19 @@ describe('dynocontroller', function(){
         '/tmp/sockets'
       ]);
       done();
+    });
+
+    describe('when rukorun does not listen to the sockets', function(){
+      beforeEach(function(done){
+        setTimeout(done, 250);
+      });
+
+      it('should change its state to `errored`', function(done){
+        dynoController.once('stateChanging', function(state){
+          expect(state).to.be.equal('errored');
+          done();
+        });
+      });
     });
 
     describe('when rukorun listen to the sockets', function(){

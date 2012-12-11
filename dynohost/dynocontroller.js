@@ -18,6 +18,7 @@ function DynoStateMachine(options) {
   self.id = options.dyno_id;
   self.options = options;
   self.currentState = 'idle';
+  self.afterStartTimeout = 2500;
   self.port = undefined;
 
   // stuff we can do to the dyno
@@ -171,7 +172,7 @@ function DynoStateMachine(options) {
 
   self.afterStart = function(){
     
-    setTimeout(timeoutIfNotConnected, 2500);
+    setTimeout(timeoutIfNotConnected, self.afterStartTimeout);
     
     function timeoutIfNotConnected() {
       if(self.ioSocket && self.commandSocket) return;
