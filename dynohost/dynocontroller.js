@@ -6,7 +6,7 @@ var fs = require('fs');
 var LogPlexClient = require('./logplex');
 var request = require('request');
 var path = require('path');
-var conf = require('./conf')
+var conf = require('./conf');
 var _ = require('underscore');
 
 module.exports = DynoStateMachine;

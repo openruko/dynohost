@@ -111,10 +111,15 @@ describe('dynocontroller', function(){
         });
       });
 
-      describe('when the dyno send an exit message', function()
+      describe('given a running dyno', function(){
         beforeEach(function(done){
-          // wait for do command to be emited before sending stop command
-          rukorunMock.sockets.command.once('data', function(data){
+          rukorunMock.sockets.command.once('data', function(){ 
+            done();
+          });
+        });
+
+        describe('when the dyno send an exit message', function(){
+          beforeEach(function(done){
             rukorunMock.sockets.command.write(JSON.stringify({
               type: 'exit',
               code: 1234,
@@ -122,20 +127,35 @@ describe('dynocontroller', function(){
             }) + '\n');
             done();
           });
-        });
 
-        it('should change its state to `completed`', function(done){
-          dynoController.once('stateChanging', function(state){
-            expect(state).to.be.equal('completed');
-            done();
+          it('should change its state to `completed`', function(done){
+            dynoController.once('stateChanging', function(state){
+              expect(state).to.be.equal('completed');
+              done();
+            });
+          });
+
+          it('should send `stop` command to rukorun', function(done){
+            rukorunMock.sockets.command.once('data', function(data){
+              data = JSON.parse(data.toString());
+              expect(data.type).to.be.equal('stop');
+              done();
+            });
           });
         });
 
-        it('should send `stop` command to rukorun', function(done){
-          rukorunMock.sockets.command.once('data', function(data){
-            data = JSON.parse(data.toString());
-            expect(data.type).to.be.equal('stop');
+        describe('when api server stop a dyno', function(){
+          beforeEach(function(done){
+            dynoController.stop();
             done();
+          });
+
+          it('should send `stop` command to rukorun', function(done){
+            rukorunMock.sockets.command.once('data', function(data){
+              data = JSON.parse(data.toString());
+              expect(data.type).to.be.equal('stop');
+              done();
+            });
           });
         });
       });
