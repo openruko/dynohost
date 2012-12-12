@@ -1,9 +1,11 @@
 #!/bin/bash
 
 dyno_id=$1
-lxc-stop -n "$dyno_id"  
+
+# TODO kill all processes inside the container
+# http://stackoverflow.com/questions/392022/best-way-to-kill-all-child-processes
+
+lxc-stop -n "$dyno_id"
 sleep 1
 rm run_${dyno_id}.txt
 rm -fr /var/lib/lxc/$dyno_id
-
-

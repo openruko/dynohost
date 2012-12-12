@@ -36,8 +36,9 @@ describe('dynocontroller', function(){
 
   describe('when starting the dyno', function(){
 
-    var instructions = [];
+    var instructions;
     beforeEach(function(done){
+      instructions = [];
       //mock the syncExecute function
       dynoController.syncExecute = function(instruction, cb, timeout){
         instructions.push(instruction);
@@ -47,6 +48,7 @@ describe('dynocontroller', function(){
         });
       };
       dynoController.afterStartTimeout = 300;
+      dynoController.cleanUpTimeout = 300;
       dynoController.start();
       done();
     });
@@ -59,15 +61,17 @@ describe('dynocontroller', function(){
     });
 
     it('should start a provision script', function(done){
-      expect(instructions).to.have.length(1);
-      expect(instructions[0].command).to.be.equal('/bin/bash');
-      expect(instructions[0].args).to.be.deep.equal([
-        'dynohost/scripts/build-provision',
-        123,
-        '/tmp/sockets',
-        '/tmp/sockets'
-      ]);
-      done();
+      setTimeout(function(){
+        expect(instructions).to.have.length(1);
+        expect(instructions[0].command).to.be.equal('/bin/bash');
+        expect(instructions[0].args).to.be.deep.equal([
+          'dynohost/scripts/build-provision',
+          123,
+          '/tmp/sockets',
+          '/tmp/sockets'
+        ]);
+        done();
+      }, 20);
     });
 
     describe('when rukorun does not listen to the sockets', function(){
@@ -139,6 +143,41 @@ describe('dynocontroller', function(){
             rukorunMock.sockets.command.once('data', function(data){
               data = JSON.parse(data.toString());
               expect(data.type).to.be.equal('stop');
+              done();
+            });
+          });
+
+          describe('When the socket are destroyed', function(){
+            beforeEach(function(done){
+              setTimeout(function(){
+                rukorunMock.closeSockets(done);
+              }, 20);
+            });
+
+            it('should execute one cleanup script', function(done){
+              setTimeout(function(){
+                expect(instructions).to.have.length(2);
+                expect(instructions[1].command).to.be.equal('/bin/bash');
+                expect(instructions[1].args).to.be.deep.equal([
+                  'dynohost/scripts/cleanup',
+                  123
+                ]);
+                done();
+              }, 20);
+            });
+          });
+
+          describe('Even if the sockets are not destroyed', function(done){
+            beforeEach(function(done){
+              setTimeout(done, 310);
+            });
+
+            it('should execute a cleanup script after cleanupTimeout', function(done){
+              expect(instructions).to.have.length(2);
+              expect(instructions[1].args).to.be.deep.equal([
+                'dynohost/scripts/cleanup',
+                123
+              ]);
               done();
             });
           });

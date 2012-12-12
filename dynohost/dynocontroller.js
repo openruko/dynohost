@@ -19,6 +19,7 @@ function DynoStateMachine(options) {
   self.options = options;
   self.currentState = 'idle';
   self.afterStartTimeout = 2500;
+  self.cleanUpTimeout = 11000; // Keep it > 10s (R12)
   self.port = undefined;
 
   // stuff we can do to the dyno
@@ -244,16 +245,25 @@ function DynoStateMachine(options) {
       self.commandSocket.write(JSON.stringify({ type: 'stop' }) + '\n');
     }
 
+    self.commandSocket.on('close', cleanUp);
+    self.ioSocket.on('close', cleanUp);
+
     // Max Timeout is 10s, after wihich SIGKILL is sent to every processes
-    setTimeout(function() {
-    
+    var timeoutId = setTimeout(cleanUp, self.cleanUpTimeout);
+    var cleaning = false;
+    function cleanUp() {
+      if(cleaning) return;
+      cleaning = true;
+      clearInterval(timeoutId);
+
+      // we can destroy sockets several times. It's not a problem.
       if(self.commandSocket) self.commandSocket.destroy();
       if(self.ioSocket) self.ioSocket.destroy();
 
       console.log(self.id + ' - Cleaning up dyno');
       var cleanUpInstructions = {
         command: '/bin/bash',
-        args: ['scripts/cleanup', self.id]
+        args: ['dynohost/scripts/cleanup', self.id]
       };
       self.syncExecute(cleanUpInstructions, function() {
         console.log(self.id + ' - Cleaned up');
@@ -261,8 +271,7 @@ function DynoStateMachine(options) {
         self.exitCode = 1;
         self.emit('exited');
       });
-
-    },11000);
+    }
   };
 
 }
