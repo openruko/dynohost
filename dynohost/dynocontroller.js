@@ -111,6 +111,10 @@ function DynoStateMachine(options) {
   var connCount = 0;
   function handleConnection(socketName) {
     return function(socket) {
+      // without on error, the process crash on socket error
+      socket.on('error', function(err){
+        console.error(err)
+      });
       console.log(self.id + ' - Socket ' + socketName + ' connected');
       self[socketName] = socket;
       connCount++;
@@ -121,16 +125,20 @@ function DynoStateMachine(options) {
           //console.log(self.id + ' - Received some data');
           self.emit('data', data);
         });
-        self.commandSocket.on('data', function(json) {
-          var msg = JSON.parse(json.toString());
-          if(self.logplexClient) {
-            self.logplexClient.write(msg.message);
-          }
+        self.commandSocket.on('data', function(str) {
+          var messages = str.toString().split('\n');
+          messages.forEach(function(json){
+            if (!json) return;
+            msg = JSON.parse(json);
+            if(self.logplexClient) {
+              self.logplexClient.write(msg.message);
+            }
 
-          if(msg.type === 'exit'){
-            self.exitCode = msg.code;
-            self.fire('exit');
-          }
+            if(msg.type === 'exit'){
+              self.exitCode = msg.code;
+              self.fire('exit');
+            }
+          });
         });
       }
     };
