@@ -130,7 +130,7 @@ function DynoStateMachine(options) {
           messages.forEach(function(json){
             if (!json) return;
             msg = JSON.parse(json);
-            if(self.logplexClient) {
+            if(self.logplexClient && msg.message) {
               self.logplexClient.write(msg.message);
             }
 
