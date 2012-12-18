@@ -1,5 +1,4 @@
 var async = require('async');
-var uuid = require('node-uuid');
 var spawn = require('child_process').spawn;
 var net = require('net');
 var EventEmitter = require('events').EventEmitter;
@@ -7,7 +6,7 @@ var fs = require('fs');
 var LogPlexClient = require('./logplex');
 var request = require('request');
 var path = require('path');
-var conf = require('./conf')
+var conf = require('./conf');
 var _ = require('underscore');
 
 module.exports = DynoStateMachine;
@@ -19,6 +18,8 @@ function DynoStateMachine(options) {
   self.id = options.dyno_id;
   self.options = options;
   self.currentState = 'idle';
+  self.afterStartTimeout = 2500;
+  self.cleanUpTimeout = 11000; // Keep it > 10s (R12)
   self.port = undefined;
 
   // stuff we can do to the dyno
@@ -102,8 +103,8 @@ function DynoStateMachine(options) {
     }
   };
 
-  self.commandServer = buildSocketServer(self.id,'command');
-  self.ioServer = buildSocketServer(self.id,'io');
+  self.commandServer = self.buildSocketServer(self.id,'command');
+  self.ioServer = self.buildSocketServer(self.id,'io');
 
   self.commandServer.on('connection', handleConnection('commandSocket'));
   self.ioServer.on('connection', handleConnection('ioSocket'));
@@ -161,13 +162,14 @@ function DynoStateMachine(options) {
         command: '/bin/bash', 
         args: [provisionScript,
           options.dyno_id, 
+          // TODO why twice the same path
           path.join(conf.dynohost.socketPath, self.id),
           path.join(conf.dynohost.socketPath, self.id)].concat(Object.keys(self.options.mounts).map(function(mKey) {
             return mKey + ':' + self.options.mounts[mKey];
           }))
       };
 
-      syncExecute(buildArgs, function(err, result) {
+      self.syncExecute(buildArgs, function(err, result) {
         console.dir(err || result);
         if(err) return cb(err);
         cb();
@@ -179,7 +181,7 @@ function DynoStateMachine(options) {
 
   self.afterStart = function(){
     
-    setTimeout(timeoutIfNotConnected, 2500);
+    setTimeout(timeoutIfNotConnected, self.afterStartTimeout);
     
     function timeoutIfNotConnected() {
       if(self.ioSocket && self.commandSocket) return;
@@ -188,7 +190,7 @@ function DynoStateMachine(options) {
       self.commandServer.close();
       var tailLogArgs = ({ command: '/usr/bin/tail', 
                           args: ['-n20','run_' + self.id + '.txt'] });
-      syncExecute(tailLogArgs, function(tailError, tailResult) {
+      self.syncExecute(tailLogArgs, function(tailError, tailResult) {
         var effectiveResult = tailError || tailResult;
         if(effectiveResult.output.indexOf('No cgroup mounted') !== -1) {
           console.error(self.id + ' - No cgroup mounted on host system.');
@@ -251,31 +253,39 @@ function DynoStateMachine(options) {
       self.commandSocket.write(JSON.stringify({ type: 'stop' }) + '\n');
     }
 
+    self.commandSocket.on('close', cleanUp);
+    self.ioSocket.on('close', cleanUp);
+
     // Max Timeout is 10s, after wihich SIGKILL is sent to every processes
-    setTimeout(function() {
-    
+    var timeoutId = setTimeout(cleanUp, self.cleanUpTimeout);
+    var cleaning = false;
+    function cleanUp() {
+      if(cleaning) return;
+      cleaning = true;
+      clearInterval(timeoutId);
+
+      // we can destroy sockets several times. It's not a problem.
       if(self.commandSocket) self.commandSocket.destroy();
       if(self.ioSocket) self.ioSocket.destroy();
 
       console.log(self.id + ' - Cleaning up dyno');
       var cleanUpInstructions = {
         command: '/bin/bash',
-        args: ['scripts/cleanup', self.id]
+        args: ['dynohost/scripts/cleanup', self.id]
       };
-      syncExecute(cleanUpInstructions, function() {
+      self.syncExecute(cleanUpInstructions, function() {
         console.log(self.id + ' - Cleaned up');
         self.status = 'completed';
         self.exitCode = 1;
         self.emit('exited');
       });
-
-    },11000);
+    }
   };
 
 }
 
 
-function buildSocketServer(dyno_id, prefix) {
+DynoStateMachine.prototype.buildSocketServer = function(dyno_id, prefix) {
   var socketDir=path.join(conf.dynohost.socketPath, dyno_id);
   var socketPath=path.join(socketDir,prefix + '.sock');
   if(!fs.existsSync(socketDir)) {
@@ -284,9 +294,9 @@ function buildSocketServer(dyno_id, prefix) {
   var server = net.createServer();
   server.listen(socketPath);
   return server;
-}
+};
 
-function syncExecute(instructions, cb, timeout) {
+DynoStateMachine.prototype.syncExecute = function (instructions, cb, timeout) {
 
   var stdout = '';
   var stderr = '';
@@ -343,6 +353,6 @@ function syncExecute(instructions, cb, timeout) {
       }
     });
   });
-}
+};
 
 
