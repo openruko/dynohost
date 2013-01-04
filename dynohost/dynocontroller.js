@@ -114,7 +114,7 @@ function DynoStateMachine(options) {
     return function(socket) {
       // without on error, the process crash on socket error
       socket.on('error', function(err){
-        console.error(err)
+        console.error(err);
       });
       console.log(self.id + ' - Socket ' + socketName + ' connected');
       self[socketName] = socket;
@@ -130,7 +130,7 @@ function DynoStateMachine(options) {
           var messages = str.toString().split('\n');
           messages.forEach(function(json){
             if (!json) return;
-            msg = JSON.parse(json);
+            var msg = JSON.parse(json);
             if(self.logplexClient && msg.message) {
               self.logplexClient.write(msg.message);
             }
