@@ -61,6 +61,7 @@ function RezServer(dynoFetcher, options) {
         });
 
         dyno.on('stateChanged', function(state) {
+          if(disconnected) return;
           if(state === 'errored') {
             s.write('E: \n ! Problem provisioning build server\n\n');
             s.destroySoon();
@@ -68,7 +69,7 @@ function RezServer(dynoFetcher, options) {
           if(state === 'completed') {
             s.destroySoon();
           }
-          if((!disconnected) && state === 'listening') {
+          if(state === 'listening') {
             dyno.run();
             dyno.ioSocket.setNoDelay();
             dyno.commandSocket.setNoDelay();
