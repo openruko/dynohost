@@ -251,10 +251,12 @@ function DynoStateMachine(options) {
     self.isStopping = true;
     if(self.commandSocket) {
       self.commandSocket.write(JSON.stringify({ type: 'stop' }) + '\n');
+      self.commandSocket.on('close', cleanUp);
     }
 
-    self.commandSocket.on('close', cleanUp);
-    self.ioSocket.on('close', cleanUp);
+    if(self.ioSocket) {
+      self.ioSocket.on('close', cleanUp);
+    }
 
     // Max Timeout is 10s, after wihich SIGKILL is sent to every processes
     var timeoutId = setTimeout(cleanUp, self.cleanUpTimeout);
