@@ -1,4 +1,5 @@
 # DynoHost - Hypervisor for dynos
+[![Build Status](https://travis-ci.org/openruko/dynohost.png)](https://travis-ci.org/openruko/dynohost)
 
 ## Introduction
 
