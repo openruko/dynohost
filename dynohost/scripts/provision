@@ -50,9 +50,10 @@ EOF
 mounts=(${@:4})
 
 s3_repo_url=$4
+
+echo "Fetching repo archive: curl ${s3_repo_url#*:}"
 s3_repo_code=$(curl -L -s -o /dev/null -w "%{http_code}" "${s3_repo_url#*:}")
 
-echo "Fetching repo archive"
 if [ "$(basename $0)" = 'build-provision' ];  then
   # TODO if 403 Not Authorized print a warning
   if [ "$s3_repo_code" = "404" ]; then
@@ -75,6 +76,7 @@ for mount in "${mounts[@]}"; do
   # extract the gzipped tar, dont bother with squashfs
   #if s3url starts with http
   if [[ "$mount_url" == http* ]]; then
+    echo "Fetching mount $mount_url"
     curl -L $mount_url | tar -z -x -C "$dyno_dir/rootfs/$mount_point"
   fi
 
