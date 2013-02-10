@@ -75,6 +75,26 @@ function DynoHostServer() {
 
   var stateUpdateQueue = async.queue(updateState,1);
 
+  var incrementHeartbeat = function(payload, cb) {
+    var requestInfo = {
+      method: 'POST',
+      url: apiBaseUrl + 'internal/incrementHeartbeat',
+      headers: {
+        'Authorization': ' Basic ' +
+          new Buffer(':' + conf.apiserver.key).toString('base64')
+      },
+      json: true,
+      body: payload
+    };
+
+    request(requestInfo, function(err, resp, body) {
+      cb();
+    });
+  };
+  //Not sure why this queue is needed? @tombh
+  var incrementHeartbeatQueue = async.queue(incrementHeartbeat, 1);
+
+
   this.process = function(job, cb) {
     var dyno;
 
@@ -90,9 +110,20 @@ function DynoHostServer() {
           port: dyno.port
         });
       });
+
+      // Keep track of the app's accumulated uptime across all instances.
+      // The instance ID is used to reference the app ID so that uptime is kept on the app table.
+      if(job.instance_id){
+        dyno.on('heartbeat', function() {
+          incrementHeartbeatQueue.push({
+            instanceId: job.instance_id
+          });
+        });
+      }
+
       dyno.start();
       return dyno;
-    } 
+    }
 
     if(job.next_action === 'kill') {
       dyno = dynos[job.dyno_id];
