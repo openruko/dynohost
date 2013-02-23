@@ -139,6 +139,10 @@ function DynoStateMachine(options) {
               self.exitCode = msg.code;
               self.fire('exit');
             }
+            // Keep track of the app's accumulated uptime
+            if(msg.heartbeat) {
+              self.emit('heartbeat');
+            }
           });
         });
       }
