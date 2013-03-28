@@ -41,7 +41,8 @@ cat <<EOF > etc/hostname
 $dyno_id
 EOF
 
-cat <<EOF > etc/hosts
+cat /etc/hosts > etc/hosts
+cat <<EOF >> etc/hosts
 127.0.0.1       localhost mymachine.me
 127.0.0.1       $dyno_id
 EOF

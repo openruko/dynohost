@@ -5,6 +5,7 @@ var request = require('request');
 var async = require('async');
 var conf = require('./conf');
 var apiBaseUrl = require('url').format(conf.apiserver) + '/';
+var fs = require('fs');
 
 var dynos = {};
 
@@ -34,7 +35,10 @@ function DynoHostServer() {
 
   function pollForJobs(cb) {
     var url = apiBaseUrl + 'internal/getjobs';
-    request(url, function(err, resp, body) {
+    var requestInfo = {
+      url: url
+    };
+    request(requestInfo, function(err, resp, body) {
       if(err) {
         console.error('Unable to fetch jobs from ' + url);
         return setTimeout(cb, 1000);
@@ -55,13 +59,13 @@ function DynoHostServer() {
 
 
   var updateState = function(payload, cb) {
-    console.log(payload.dynoId + 
+    console.log(payload.dynoId +
                 ' - Update api server with state: ' + payload.state);
     var requestInfo = {
       method: 'POST',
       url: apiBaseUrl + 'internal/updatestate',
       headers: {
-        'Authorization': ' Basic ' + 
+        'Authorization': ' Basic ' +
           new Buffer(':' + conf.apiserver.key).toString('base64')
       },
       json: true,
@@ -104,6 +108,7 @@ function DynoHostServer() {
       dyno.on('stateChanging', function(state) {
         stateUpdateQueue.push({
           dynoId: job.dyno_id,
+          dynoHostname: job.dyno_hostname,
           instanceId: job.instance_id,
           state: state,
           appId: job.app_id,

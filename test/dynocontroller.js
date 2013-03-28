@@ -18,7 +18,7 @@ describe('dynocontroller', function(){
       mkdirp(socketPath, function(err){
         if(err) return done(err);
         dynoController = new DynoController({
-          dyno_id: 123,
+          dyno_id: "123",
           logplex_id: 'logplex-test-123',
           attached: false,
           pty: false,
@@ -66,9 +66,9 @@ describe('dynocontroller', function(){
         expect(instructions[0].command).to.be.equal('/bin/bash');
         expect(instructions[0].args).to.be.deep.equal([
           'dynohost/scripts/build-provision',
-          123,
-          '/tmp/sockets',
-          '/tmp/sockets'
+          "123",
+          '/tmp/sockets/123',
+          '/tmp/sockets/123'
         ]);
         done();
       }, 20);
@@ -160,7 +160,7 @@ describe('dynocontroller', function(){
                 expect(instructions[1].command).to.be.equal('/bin/bash');
                 expect(instructions[1].args).to.be.deep.equal([
                   'dynohost/scripts/cleanup',
-                  123
+                  "123"
                 ]);
                 done();
               }, 20);
@@ -176,7 +176,7 @@ describe('dynocontroller', function(){
               expect(instructions).to.have.length(2);
               expect(instructions[1].args).to.be.deep.equal([
                 'dynohost/scripts/cleanup',
-                123
+                "123"
               ]);
               done();
             });
