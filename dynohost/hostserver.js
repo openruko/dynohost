@@ -35,10 +35,7 @@ function DynoHostServer() {
 
   function pollForJobs(cb) {
     var url = apiBaseUrl + 'internal/getjobs';
-    var requestInfo = {
-      url: url
-    };
-    request(requestInfo, function(err, resp, body) {
+    request(url, function(err, resp, body) {
       if(err) {
         console.error('Unable to fetch jobs from ' + url);
         return setTimeout(cb, 1000);
