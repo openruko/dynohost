@@ -8,8 +8,8 @@ var socketPath = conf.dynohost.socketPath;
 var sockets = exports.sockets = {}
 
 exports.connectToSockets = function(cb){
-  sockets.io = net.createConnection(Path.join(socketPath, 'io.sock'));
-  sockets.command = net.createConnection(Path.join(socketPath, 'command.sock'));
+  sockets.io = net.createConnection(Path.join(socketPath, '123', 'io.sock'));
+  sockets.command = net.createConnection(Path.join(socketPath, '123', 'command.sock'));
 
   _(sockets).forEach(function(socket){
     socket.on('error', function(err) {
