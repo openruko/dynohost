@@ -22,7 +22,7 @@ mkdir -p $dyno_dir/rootfs
 
 (
 cd $dyno_dir/rootfs
-mkdir -p root/ps-run root/sockets proc sys usr etc/ssl etc/alternatives sbin bin lib lib64 
+mkdir -p root/ps-run root/sockets proc sys usr etc/ssl etc/alternatives etc/profile.d sbin bin lib lib64
 
 cat <<EOF > etc/resolv.conf
 # Use host resolv.conf
@@ -45,6 +45,28 @@ cat /etc/hosts > etc/hosts
 cat <<EOF >> etc/hosts
 127.0.0.1       localhost mymachine.me
 127.0.0.1       $dyno_id
+EOF
+
+cat <<EOF >> etc/profile
+export PS1='\[\033[01;34m\]\w\[\033[00m\] \[\033[01;32m\]$ \[\033[00m\]'
+
+if [ -d /etc/profile.d ]; then
+  for i in /etc/profile.d/*.sh; do
+    if [ -r \$i ]; then
+      . \$i
+    fi
+  done
+  unset i
+fi
+
+if [ -d /app/.profile.d ]; then
+  for i in /app/.profile.d/*.sh; do
+    if [ -r \$i ]; then
+      . \$i
+    fi
+  done
+  unset i
+fi
 EOF
 )
 
@@ -87,7 +109,7 @@ for mount in "${mounts[@]}"; do
   fi
   #else
   #GIT_CHECKOUTDIR=$mountdir git clone $s3url
-  
+
   # reset perms to devil uid/guid to avoid setuid/setgid attacks
   chown -R 1666.666 "$dyno_dir/rootfs/$mount_point"
 
@@ -115,7 +137,7 @@ mknod -m 666 ${DEV}/tty c 5 0
 mknod -m 600 ${DEV}/console c 5 1
 mknod -m 666 ${DEV}/tty0 c 4 0
 mknod -m 666 ${DEV}/full c 1 7
-# mknod -m 600 ${DEV}/initctl p 
+# mknod -m 600 ${DEV}/initctl p
 mknod -m 666 ${DEV}/ptmx c 5 2
 
 # TODO Add memory and CPU limits
@@ -190,13 +212,14 @@ none $dyno_dir/rootfs/dev/shm tmpfs defaults 0 0
 /lib $dyno_dir/rootfs/lib none bind 0 0
 /etc/ssl $dyno_dir/rootfs/etc/ssl none bind 0 0
 /etc/alternatives $dyno_dir/rootfs/etc/alternatives none bind 0 0
+/etc/profile.d $dyno_dir/rootfs/etc/profile.d none bind 0 0
 $RUKORUN_PATH $dyno_dir/rootfs/root/ps-run none bind 0 0
 $socket_dir $dyno_dir/rootfs/root/sockets none bind 0 0
 FSCONFIG
 
 # Only mount /lib64 on 64bit machines
 # Eg; Travis CI is 32bit
-if [ -d /lib64 ]; then 
+if [ -d /lib64 ]; then
   echo "/lib64 $dyno_dir/rootfs/lib64 none bind 0 0" >> $dyno_dir/fstab
 fi
 
