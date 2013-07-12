@@ -48,8 +48,6 @@ function DynoHostServer() {
       url: apiBaseUrl + 'internal/getjobs',
     });
 
-    console.dir(requestInfo);
-
     request(requestInfo, function(err, resp, body) {
       if(err) {
         console.error('Unable to fetch jobs from ' + requestInfo["url"] + '. Error: ' + err.message);
