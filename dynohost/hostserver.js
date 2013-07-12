@@ -141,6 +141,7 @@ function DynoHostServer() {
 
   this.shutdown = function() {
     isStopping = true;
+    return setTimeout(process.exit, 5000);
   };
 
 }
