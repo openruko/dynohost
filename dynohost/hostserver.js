@@ -6,8 +6,17 @@ var async = require('async');
 var conf = require('./conf');
 var apiBaseUrl = require('url').format(conf.apiserver) + '/';
 var fs = require('fs');
+var _ = require('underscore');
 
 var dynos = {};
+
+var requestDefault = {
+  strictSSL: conf.apiserver.ssl_verify,
+  headers: {
+    'Authorization': ' Basic ' +
+      new Buffer(':' + conf.apiserver.key).toString('base64')
+  }
+}
 
 module.exports.createServer = function(options) {
   options = options || {};
@@ -29,45 +38,47 @@ function DynoHostServer() {
   this.start  = function() {
     async.whilst(function() {
       return !isStopping;
-    }, pollForJobs, function() { });
+    }, pollForJobs, function() { process.exit(); });
     self.emit('ready');
   };
 
   function pollForJobs(cb) {
-    var url = apiBaseUrl + 'internal/getjobs';
-    request(url, function(err, resp, body) {
+    var requestInfo = _.extend(requestDefault, {
+      method: 'GET',
+      url: apiBaseUrl + 'internal/getjobs',
+    });
+
+    console.dir(requestInfo);
+
+    request(requestInfo, function(err, resp, body) {
       if(err) {
-        console.error('Unable to fetch jobs from ' + url);
+        console.error('Unable to fetch jobs from ' + requestInfo["url"] + '. Error: ' + err.message);
         return setTimeout(cb, 1000);
       }
+
       var payload = JSON.parse(body);
       payload.forEach(function(job) {
         console.log(job.dyno_id + ' - Incoming new job: ' + job.next_action);
         self.process(job, function() { });
       });
+
       cb();
     });
   }
-
 
   this.getDyno = function(dynoId) {
     return dynos[dynoId];
   };
 
-
   var updateState = function(payload, cb) {
     console.log(payload.dynoId +
                 ' - Update api server with state: ' + payload.state);
-    var requestInfo = {
+    var requestInfo = _.extend(requestDefault, {
       method: 'POST',
       url: apiBaseUrl + 'internal/updatestate',
-      headers: {
-        'Authorization': ' Basic ' +
-          new Buffer(':' + conf.apiserver.key).toString('base64')
-      },
       json: true,
       body: payload
-    };
+    });
 
     request(requestInfo, function(err, resp, body) {
       cb();
@@ -77,16 +88,12 @@ function DynoHostServer() {
   var stateUpdateQueue = async.queue(updateState,1);
 
   var incrementHeartbeat = function(payload, cb) {
-    var requestInfo = {
+    var requestInfo = _.extend(requestDefault, {
       method: 'POST',
       url: apiBaseUrl + 'internal/incrementHeartbeat',
-      headers: {
-        'Authorization': ' Basic ' +
-          new Buffer(':' + conf.apiserver.key).toString('base64')
-      },
       json: true,
       body: payload
-    };
+    });
 
     request(requestInfo, function(err, resp, body) {
       cb();
@@ -94,7 +101,6 @@ function DynoHostServer() {
   };
   //Not sure why this queue is needed? @tombh
   var incrementHeartbeatQueue = async.queue(incrementHeartbeat, 1);
-
 
   this.process = function(job, cb) {
     var dyno;

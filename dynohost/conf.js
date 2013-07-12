@@ -19,7 +19,8 @@ module.exports = {
     protocol: env.APISERVER_PROTOCOL || 'https',
     hostname: env.APISERVER_HOST || 'localhost',
     port: env.APISERVER_PORT || 5000,
-    key: env.APISERVER_KEY
+    key: env.APISERVER_KEY,
+    ssl_verify: !env.APISERVER_SSL_VERIFY == "false"
   },
   logplex: {
     hostname: env.LOGPLEX_HOST || 'localhost',
