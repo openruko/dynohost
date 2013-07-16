@@ -11,6 +11,7 @@ var _ = require('underscore');
 var dynos = {};
 
 var requestDefault = {
+  json: true,
   strictSSL: conf.apiserver.ssl_verify,
   headers: {
     'Authorization': ' Basic ' +
@@ -45,19 +46,23 @@ function DynoHostServer() {
   function pollForJobs(cb) {
     var requestInfo = _.extend(requestDefault, {
       method: 'GET',
-      url: apiBaseUrl + 'internal/getjobs',
+      url: apiBaseUrl + 'internal/getjobs'
     });
 
-    request(requestInfo, function(err, resp, body) {
+    request(requestInfo, function(err, resp, payload) {
       if(err) {
         console.error('Unable to fetch jobs from ' + requestInfo["url"] + '. Error: ' + err.message);
         return setTimeout(cb, 1000);
       }
 
-      var payload = JSON.parse(body);
       payload.forEach(function(job) {
-        console.log(job.dyno_id + ' - Incoming new job: ' + job.next_action);
-        self.process(job, function() { });
+        try {
+          console.log(job.dyno_id + ' - Incoming new job: ' + job.next_action);
+          self.process(job, function() { });
+        } catch(error) {
+          console.error("Error in execute job:");
+          console.dir(error);
+        }
       });
 
       cb();
@@ -74,7 +79,6 @@ function DynoHostServer() {
     var requestInfo = _.extend(requestDefault, {
       method: 'POST',
       url: apiBaseUrl + 'internal/updatestate',
-      json: true,
       body: payload
     });
 
@@ -89,7 +93,6 @@ function DynoHostServer() {
     var requestInfo = _.extend(requestDefault, {
       method: 'POST',
       url: apiBaseUrl + 'internal/incrementHeartbeat',
-      json: true,
       body: payload
     });
 
