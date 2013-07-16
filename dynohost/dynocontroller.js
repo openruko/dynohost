@@ -224,6 +224,8 @@ function DynoStateMachine(options) {
       no_proxy: process.env.no_proxy,
       NO_PROXY: process.env.NO_PROXY,
 
+      HOME: "/app",
+
       // For people behind a proxy, proxy should accept npm CA cert
       // https://github.com/isaacs/npm/issues/1977#issuecomment-3761590
       //
